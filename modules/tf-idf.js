@@ -29,10 +29,11 @@ class TFIDF_Vectorizer {
     }
 
     /**
-     * @param {TFIDF_Document} trainDocument 
+     * 
+     * @param  {...TFIDF_Document} trainDocument 
      */
-    insertTrainDocuments(trainDocument) {
-        this.trainDocuments.push(trainDocument)
+    insertTrainDocuments(...trainDocument) {
+        this.trainDocuments.push(...trainDocument)
     }
 
     calculateIDF() {
@@ -45,6 +46,14 @@ class TFIDF_Vectorizer {
             // hitung idf berdasar df
             this.idf[term_index] = Math.log10(this.trainDocuments.length / df)
         })
+    }
+
+    vectorizeDocument(document) {
+        const vector = [...this.idf]
+        document.calculateTF.forEach((tf, index) => {
+            vector[index] *= tf
+        })
+        return vector
     }
 
 }
@@ -87,6 +96,7 @@ class TFIDF_Document {
  * contoh cara pakai:
  * 
  * // definisikan term-term di vocabulary
+ * const vocabulary <-- ["term1", "term2", ...]
  * const Vectorizer = TFIDF_Vectorizer(vocabulary)
  * 
  * // load dataset
@@ -94,5 +104,16 @@ class TFIDF_Document {
  *     const tokenizedWords = parseTokenizedWord(d)
  *     const document = TFIDF_Document(tokenizedWords)
  *     Vectorizer.insertTrainDocuments(document)
+ * 
+ * // train
+ * Vectorizer.calculateIDF()
+ * 
+ * // convert to feature vector
+ * foreach d in dataset:
+ *      X_train.push(Vectorizer.vectorizeDocument(d))
+ *      Y_train.push(d.class)
+ * 
+ * // masukkan X_train Y_train ke dataset
+ * // klasifikasikan dengan SVM
  */
 
