@@ -1,0 +1,31 @@
+<script src="./svm.js"></script>
+<script>
+
+
+const X = [
+    [1,   2,   0.5 ],
+    [0.3, 1.5,   4 ],
+    [-2,  -1,  -1  ],
+    [-1, -0.5, -0.5]
+]
+
+const Y = [1, 1, -1, -1]
+
+const svm = new SVM(X, Y)
+
+
+// utility tests
+console.log(svm.Math.dot(X[0], X[1]), "^^ should return 0.3+3+2 = 5.3")
+console.log(svm.Math.eachElements(X[0], X[1], (x0_i, x1_i, i) => {
+    return x0_i*x1_i + i
+}), "^^ should return [0.3+0, 4+1, 2+2]")
+console.log(svm.Math.sum(X[0]), "^^ should return 1+2+0.5 = 3.5")
+
+// for convenience sake:
+svm.alpha = [0.5, 1, 0.5, 1]
+
+console.log(svm.calcGamma(1,2),
+    "^^ should return -(0.5*1 + 1*-1) = 0.5"
+)
+
+</script>

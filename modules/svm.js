@@ -47,7 +47,7 @@ class SVM {
 
 
         // definisikan batas range untuk a_r
-        const gamma = SVM.Calc.gamma(r, s)
+        const gamma = this.calcGamma(r, s)
         if (y_r === y_s) {
         // kasus 1. untuk y_r == y_s (titik x_r & x_s dalam class yg sama)
             range = [
@@ -73,41 +73,62 @@ class SVM {
                 + y_r*SVM.Math.dot(
                     this.X.reduce((acc, x_i, i) => {
                         if (i == r || i == s) return acc + Array(this.N).fill(0)
-                        return SVM.Math.eachElements(acc, x_i, (acc_i, x_i_j, j) => this.alpha[j]*this.Y[j]*x_i_j)
+                        return SVM.Math.eachElements(acc, x_i, (acc_j, x_i_j, j) => acc_j + this.alpha[j]*this.Y[j]*x_i_j)
                     }, Array(this.N).fill(0)),
                     SVM.Math.eachElements(x_r, x_s, (x_r_i, x_s_i, i) => x_r_i - x_s_i)
                 )
                 + y_r*y_s - 1
-        const c = 
+        const c = gamma*(0.5*gamma*SVM.Math.dot(x_s, x_s)
+                + SVM.Math.dot(x_s, this.X.reduce((acc, x_i, i)  => {
+                    if (i == r || i == s) return acc + Array(this.N).fill(0)
+                    return SVM.Math.eachElements(acc, x_i, (acc_j, x_i_j, j) => acc_j + this.alpha[j]*this.Y[j]*x_i_j)
+                }, Array(this.N).fill(0))) - y_s)
+        // ^^ semoga code nya gaada yg salah plis
 
     }
 
-    static Calc = {
 
-        /**
-         * gamma adalah sebuah variabel sebagai constraint sehingga
-         * a_r*y_r + a_s*y_s = gamma
-         * karena : sum(a_i, y_i) = 0,
-         * maka   : a_r*y_r + a_s*y_s = -sum(a_i, y_i ; i not in {r, s})
-         *          a_r*y_r + a_s*y_s = gamma --> dijadikan variabel
-         * @param {number} r index
-         * @param {number} s index
-         * @returns {number} value gamma
-         */
-        gamma(r, s) {
-            let accumulator = 0
-            for (let i=0; i<SVM.N && i!==r && i!==s; i++) {
-                accumulator += SVM.alpha[i] * SVM.y[i]
-            }
-            return -accumulator
-        },
-
-        lagrangianDualForm() {
-            // TODO: buat ini
+    /**
+     * gamma adalah sebuah variabel sebagai constraint sehingga
+     * a_r*y_r + a_s*y_s = gamma
+     * karena : sum(a_i * y_i) = 0,
+     * maka   : a_r*y_r + a_s*y_s = -sum(a_i * y_i ; i not in {r, s})
+     *          a_r*y_r + a_s*y_s = gamma --> dijadikan variabel
+     * @param {number} r index
+     * @param {number} s index
+     * @returns {number} value gamma
+     */
+    calcGamma(r, s) {
+        let accumulator = 0
+        console.log(this.N)
+        for (let i=0; i<this.N; i++) {
+            if (i === r || i === s) continue
+            accumulator += this.alpha[i] * this.Y[i]
         }
+        return -accumulator
     }
 
-    static Math = {
+    /**
+     * beta adalah sebuah variabel vektor, didefinisikan sbg:
+     * beta = sum(a_i*y_i*x_i ; i not in {r, s})
+     * mirip gamma, tapi vektor
+     * @param {number} r index
+     * @param {number} s index
+     */
+    calcBeta(r, s) {
+        let accumulator = Array(SVM.N).fill(0)
+        for (let i=0; i<SVM.N; i++) {
+            if (i === r || i === s) continue
+            accumulator = accumulator.map((acc_j, j) => acc_j + SVM.alpha[j] * SVM.Y[j] * SVM.X[i][j])
+        }
+        return accumulator
+    }
+
+    // lagrangianDualForm() {
+    //     // TODO: buat ini
+    // }
+
+    Math = {
         /**
          * dot product vektor
          * note: belum ada param checking di function ini
