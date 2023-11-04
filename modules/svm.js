@@ -24,7 +24,8 @@ class SVM {
         this.Y = Y_train // array berisi class  y_i
                 
         // variabel untuk perhitungan SVM
-        this.N = X.length
+        this.N = X.length       // banyak data training
+        this.P = X[0].length    // banyak fitur/dimensi data
         this.alpha = Array(this.N)                           // parameter alpha di lagrange multiplier
         this.C = options.C !== undefined ? options.C : 10    // hyperparameter C. default=10
         this.E = options.E !== undefined ? options.E : 0.01  // hyperparameter epsilon (error tolerance). default=0.01
@@ -36,17 +37,15 @@ class SVM {
 
     iterate() {
         // pick 2 random index
-        [r, s]     = SVM.Math.pickTwo(this.N)
-
-        // ======= nanti ini didalem loop
+        [r, s]     = this.Math.pickTwo(this.N)
 
         // assign variable (biar ga dikit" thas this thas this)
         const [a_r, a_s] = [this.alpha[r], this.alpha[s]]
         const [x_r, x_s] = [this.X[r], this.X[s]]
         const [y_r, y_s] = [this.Y[r], this.Y[s]]
 
-
         // definisikan batas range untuk a_r
+        let range = null
         const gamma = this.calcGamma(r, s)
         if (y_r === y_s) {
         // kasus 1. untuk y_r == y_s (titik x_r & x_s dalam class yg sama)
@@ -62,29 +61,50 @@ class SVM {
             ]
         }
 
-
         // cari parameter a,b,c dalam persamaan kuadrat f(a_r)
         // penjelasan:
         //      dari persamaan asli, ambil a_r & a_s sebagai variabel dan
         //      anggap lainnya konstanta, tapi substitusikan a_s = (gamma - a_r*y_r)/y_s
         //      dan didapetlah persamaan kuadrat yg variabelnya cuma a_r ¯\_(ツ)_/¯
-        const a = 0.5*(SVM.Math.dot(x_r, x_r) + SVM.Math.dot(x_s, x_s) - 2*SVM.Math.dot(x_r, x_s))
-        const b = gamma*y_r*(SVM.Math.dot(x_r, x_s) - SVM.Math.dot(x_s, x_s))
-                + y_r*SVM.Math.dot(
-                    this.X.reduce((acc, x_i, i) => {
-                        if (i == r || i == s) return acc + Array(this.N).fill(0)
-                        return SVM.Math.eachElements(acc, x_i, (acc_j, x_i_j, j) => acc_j + this.alpha[j]*this.Y[j]*x_i_j)
-                    }, Array(this.N).fill(0)),
-                    SVM.Math.eachElements(x_r, x_s, (x_r_i, x_s_i, i) => x_r_i - x_s_i)
-                )
+        const beta = this.calcBeta(r, s)
+        const a = 0.5*(this.Math.dot(x_r, x_r) + this.Math.dot(x_s, x_s) - 2*this.Math.dot(x_r, x_s))
+        const b = gamma*y_r*(this.Math.dot(x_r, x_s) - this.Math.dot(x_s, x_s))
+                + y_r*this.Math.dot(
+                    this.Math.eachElements(x_r, x_s, (x_r_i, x_s_i, i) => x_r_i - x_s_i),
+                    beta
+                    )
                 + y_r*y_s - 1
-        const c = gamma*(0.5*gamma*SVM.Math.dot(x_s, x_s)
-                + SVM.Math.dot(x_s, this.X.reduce((acc, x_i, i)  => {
-                    if (i == r || i == s) return acc + Array(this.N).fill(0)
-                    return SVM.Math.eachElements(acc, x_i, (acc_j, x_i_j, j) => acc_j + this.alpha[j]*this.Y[j]*x_i_j)
-                }, Array(this.N).fill(0))) - y_s)
+        const c = gamma*(
+                    0.5*gamma*this.Math.dot(x_s, x_s)
+                    + this.Math.dot(x_s, beta)
+                    - y_s
+                    )
         // ^^ semoga code nya gaada yg salah plis
+        
+        // x di kondisi critical: f'(x) = ax+b = 0
+        // x = -b/2a
+        let a_r_new = -b / (2*a)
 
+        // batasi value x_r_new di range yg telah terdefinisi
+        a_r_new = Math.min(Math.max(a_r_new, range[0]), range[1])
+
+        // inget constraint a_r*y_r + a_s*y_s = gamma
+        let a_s_new = (gamma - a_r_new*y_r) /  y_s
+
+        // update value di svm
+        this.alpha[r] = a_r_new
+        this.alpha[s] = a_s_new
+
+        // return info dari iterasi (untuk debug)
+        return {
+            "r": r,
+            "s": s,
+            "a_r_old": a_r,
+            "a_r_new": a_r_new,
+            "a_s_old": a_s,
+            "a_s_new": a_s_new,
+        }
+        
     }
 
 
@@ -100,7 +120,6 @@ class SVM {
      */
     calcGamma(r, s) {
         let accumulator = 0
-        console.log(this.N)
         for (let i=0; i<this.N; i++) {
             if (i === r || i === s) continue
             accumulator += this.alpha[i] * this.Y[i]
@@ -116,10 +135,10 @@ class SVM {
      * @param {number} s index
      */
     calcBeta(r, s) {
-        let accumulator = Array(SVM.N).fill(0)
-        for (let i=0; i<SVM.N; i++) {
+        let accumulator = Array(this.P).fill(0)
+        for (let i=0; i<this.N; i++) {
             if (i === r || i === s) continue
-            accumulator = accumulator.map((acc_j, j) => acc_j + SVM.alpha[j] * SVM.Y[j] * SVM.X[i][j])
+            accumulator = accumulator.map((acc_j, j) => acc_j + this.alpha[i] * this.Y[i] * this.X[i][j])
         }
         return accumulator
     }
@@ -143,9 +162,9 @@ class SVM {
          * 
          * @param {number[]} x vektor x
          * @param {number[]} y vektor y
-         * @param {Function} callback function yg menerima parameter x_i, y_i,
+         * @param {Function} callback function yg menerima parameter x_i, y_i, i
          *                   mereturn hasil operasi x_i dan y_i.
-         *                   x_i, y_i elemen ke-i vektor x dan y
+         *                   dimana x_i, y_i elemen ke-i vektor x dan y
          * @returns {number[]} result
          */
         eachElements: (x, y, callback) => x.map((x_i, i) => callback(x_i, y[i], i)),
