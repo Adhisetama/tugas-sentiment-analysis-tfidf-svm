@@ -68,13 +68,25 @@ class SVM {
         //      dari persamaan asli, ambil a_r & a_s sebagai variabel dan
         //      anggap lainnya konstanta, tapi substitusikan a_s = (gamma - a_r*y_r)/y_s
         //      dan didapetlah persamaan kuadrat yg variabelnya cuma a_r ¯\_(ツ)_/¯
+        const a = 0.5*(SVM.Math.dot(x_r, x_r) + SVM.Math.dot(x_s, x_s) - 2*SVM.Math.dot(x_r, x_s))
+        const b = gamma*y_r*(SVM.Math.dot(x_r, x_s) - SVM.Math.dot(x_s, x_s))
+                + y_r*SVM.Math.dot(
+                    this.X.reduce((acc, x_i, i) => {
+                        if (i == r || i == s) return acc + Array(this.N).fill(0)
+                        return SVM.Math.eachElements(acc, x_i, (acc_i, x_i_j, j) => this.alpha[j]*this.Y[j]*x_i_j)
+                    }, Array(this.N).fill(0)),
+                    SVM.Math.eachElements(x_r, x_s, (x_r_i, x_s_i, i) => x_r_i - x_s_i)
+                )
+                + y_r*y_s - 1
+        const c = 
 
     }
 
     static Calc = {
 
         /**
-         * gamma adalah sebuah variabel
+         * gamma adalah sebuah variabel sebagai constraint sehingga
+         * a_r*y_r + a_s*y_s = gamma
          * karena : sum(a_i, y_i) = 0,
          * maka   : a_r*y_r + a_s*y_s = -sum(a_i, y_i ; i not in {r, s})
          *          a_r*y_r + a_s*y_s = gamma --> dijadikan variabel
@@ -103,7 +115,19 @@ class SVM {
          * @param {number[]} y 
          * @returns {number[]} hasil dot product vektor x dan y
          */
-        dot: (x, y) => x.map((x_i, i) => x_i * y[i]),
+        dot: (x, y) => x.reduce((acc, x_i, i) => acc += x_i * y[i], 0),
+
+        /**
+         * operasi per elemen vektor 
+         * 
+         * @param {number[]} x vektor x
+         * @param {number[]} y vektor y
+         * @param {Function} callback function yg menerima parameter x_i, y_i,
+         *                   mereturn hasil operasi x_i dan y_i.
+         *                   x_i, y_i elemen ke-i vektor x dan y
+         * @returns {number[]} result
+         */
+        eachElements: (x, y, callback) => x.map((x_i, i) => callback(x_i, y[i], i)),
 
         /**
          * 
@@ -145,35 +169,35 @@ class SVM {
 
 }
 
-const SVM_Math = {
-    /**
-     * dot product vektor
-     * note: belum ada param checking di function ini
-     * @param {number[]} x 
-     * @param {number[]} y 
-     * @returns {number[]} hasil dot product vektor x dan y
-     */
-    dot: (x, y) => x.map((x_i, i) => x_i * y[i]),
+// const SVM_Math = {
+//     /**
+//      * dot product vektor
+//      * note: belum ada param checking di function ini
+//      * @param {number[]} x 
+//      * @param {number[]} y 
+//      * @returns {number[]} hasil dot product vektor x dan y
+//      */
+//     dot: (x, y) => x.map((x_i, i) => x_i * y[i]),
 
-    /**
-     * 
-     * @param {number[]} x 
-     * @returns jumlah dari array
-     */
-    sum: x => x.reduce((a, b) => a + b, 0),
+//     /**
+//      * 
+//      * @param {number[]} x 
+//      * @returns jumlah dari array
+//      */
+//     sum: x => x.reduce((a, b) => a + b, 0),
 
-    /**
-     * ambil 2 index unik random dari array dgn panjang n
-     * @param {number} n panjang dari array
-     * @returns {number[]} 2 index yg dipilih
-     */
-    pickTwo: n => {
-        const r = [
-            Math.floor(Math.random(n) * n),
-            Math.floor(Math.random(n) * n)
-        ]
-        while(r[0] === r[1]) r[1] = Math.floor(Math.random(n) * n)
-        return r
-    }
+//     /**
+//      * ambil 2 index unik random dari array dgn panjang n
+//      * @param {number} n panjang dari array
+//      * @returns {number[]} 2 index yg dipilih
+//      */
+//     pickTwo: n => {
+//         const r = [
+//             Math.floor(Math.random(n) * n),
+//             Math.floor(Math.random(n) * n)
+//         ]
+//         while(r[0] === r[1]) r[1] = Math.floor(Math.random(n) * n)
+//         return r
+//     }
 
-}
+// }
