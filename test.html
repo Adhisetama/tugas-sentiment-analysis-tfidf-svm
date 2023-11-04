@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>test</title>
+</head>
+<body>
+    <script src="./modules/tf-idf.js"></script>
+    <script>
+        // let a = "battle " + "good ".repeat(114) + "fool ".repeat(36) + "wit ".repeat(20)
+        // let b = "good ".repeat(80) + "fool ".repeat(58) + "wit ".repeat(15)
+        // let c = "battle ".repeat(7) + "good ".repeat(62) + "fool ".repeat(1) + "wit ".repeat(2)
+        // let d = "battle ".repeat(13) + "good ".repeat(89) + "fool ".repeat(4) + "wit ".repeat(3)
+        // const dataset = [a.split(' '), b.split(' '), c.split(' '), d.split(' ')]
+        const dataset = [
+            new TFIDF_Document("the cat chased the mouse".split(' ')),
+            new TFIDF_Document("the mouse ran away".split(' ')),
+            
+        ]
+
+        // const Vectorizer = new TFIDF_Vectorizer(["battle", "good", "fool", "wit"])
+        const Vectorizer = new TFIDF_Vectorizer([..."the cat chased mouse".split(' '), "ran", "away"])
+        Vectorizer.insertTrainDocuments(...dataset)
+
+        // dataset.forEach(d => {
+        //     const document = new TFIDF_Document(d)
+        //     Vectorizer.insertTrainDocuments(document)
+        // })
+
+        Vectorizer.calculateIDF()
+        console.log(Vectorizer.idf)
+        // Vectorizer.trainDocuments.forEach(d => {
+        //     console.log(d.calculateTF)
+        // })
+    </script>
+</body>
+</html>

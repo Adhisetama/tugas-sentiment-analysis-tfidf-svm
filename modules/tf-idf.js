@@ -15,6 +15,10 @@
  * ASUMSI:
  * - isi setiap dokumen sudah di preprocessing (stemming, dll)
  * - sudah didapatkan vocab
+ * 
+ * NOTES:
+ * - rumus idf yang dipakai: idf(t) = ln(N / df(t))
+ * - rumus tf yang dipakai: tf(t,d) = f(t,d) / sum(f(t_i,d))
  */
 
 class TFIDF_Vectorizer {
@@ -44,13 +48,14 @@ class TFIDF_Vectorizer {
                 df += trainDocument.words.includes(term) ? 1 : 0
             })
             // hitung idf berdasar df
-            this.idf[term_index] = Math.log10(this.trainDocuments.length / df)
+            console.log(df)
+            this.idf[term_index] = Math.log(this.trainDocuments.length / df)
         })
     }
 
     vectorizeDocument(document) {
         const vector = [...this.idf]
-        document.calculateTF.forEach((tf, index) => {
+        document.calculateTF(this.vocabulary).forEach((tf, index) => {
             vector[index] *= tf
         })
         return vector
@@ -68,7 +73,7 @@ class TFIDF_Document {
 
         // hitung semua okurensi term (bag of words)
         this.bagOfWords = {}
-        for (const word of words) {
+        for (const word of this.words) {
             if (word in this.bagOfWords){
                 this.bagOfWords[word] += 1
             } else {
@@ -97,12 +102,12 @@ class TFIDF_Document {
  * 
  * // definisikan term-term di vocabulary
  * const vocabulary <-- ["term1", "term2", ...]
- * const Vectorizer = TFIDF_Vectorizer(vocabulary)
+ * const Vectorizer = new TFIDF_Vectorizer(vocabulary)
  * 
  * // load dataset
  * foreach d in dataset:
  *     const tokenizedWords = parseTokenizedWord(d)
- *     const document = TFIDF_Document(tokenizedWords)
+ *     const document = new TFIDF_Document(tokenizedWords)
  *     Vectorizer.insertTrainDocuments(document)
  * 
  * // train
