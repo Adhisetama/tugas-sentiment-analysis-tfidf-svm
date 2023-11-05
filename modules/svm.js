@@ -35,6 +35,12 @@ class SVM {
         this.b = 0
     }
 
+
+    /**
+     * satu kali iterasi optimisasi SMO (sequential minimal optimization)
+     * akan mengupdate 2 value alpha yg dipilih secara random
+     * @returns {Object} detail dari iterasi (r,s yang dipilih; update a_r & a_s)
+     */
     iterate() {
         // pick 2 random index
         let [r, s] = this.Math.pickTwo(this.N)
@@ -143,6 +149,10 @@ class SVM {
         return accumulator
     }
 
+    /**
+     * calculate vector w based on alpha
+     * @returns {number[]} weight w of the classifier
+     */
     getWeight() {
         let accumulator = Array(this.P).fill(0)
         for (let i=0; i<this.N; i++) {
@@ -152,6 +162,11 @@ class SVM {
         return this.w
     }
 
+    /**
+     * calculate bias b based on alpha
+     * note: aku nggapaham rumus bias, jadi anggep aja gini
+     * @returns {number} bias b of the classifier
+     */
     getBias() {
         let n = 0
         let b = 0
@@ -195,22 +210,6 @@ class SVM {
          */
         sum: x => x.reduce((a, b) => a + b, 0),
 
-        // nggatau bakal dipake apa ngga
-        // /**
-        //  * 
-        //  * @param {number} from start index
-        //  * @param {number} to end index
-        //  * @param {Function} callback fungsi yg mereturn apa yg didalam sigma,
-        //  *                   menerima parameter i=index saat itu
-        //  */
-        // sigma: (from, to, callback) => {
-        //     let accumulator = 0
-        //     while(from < to) {
-        //         accumulator += callback(to++)
-        //     }
-        //     return accumulator
-        // },
-
         /**
          * ambil 2 index unik random dari array dgn panjang n
          * @param {number} n panjang dari array
@@ -227,36 +226,3 @@ class SVM {
     }
 
 }
-
-// const SVM_Math = {
-//     /**
-//      * dot product vektor
-//      * note: belum ada param checking di function ini
-//      * @param {number[]} x 
-//      * @param {number[]} y 
-//      * @returns {number[]} hasil dot product vektor x dan y
-//      */
-//     dot: (x, y) => x.map((x_i, i) => x_i * y[i]),
-
-//     /**
-//      * 
-//      * @param {number[]} x 
-//      * @returns jumlah dari array
-//      */
-//     sum: x => x.reduce((a, b) => a + b, 0),
-
-//     /**
-//      * ambil 2 index unik random dari array dgn panjang n
-//      * @param {number} n panjang dari array
-//      * @returns {number[]} 2 index yg dipilih
-//      */
-//     pickTwo: n => {
-//         const r = [
-//             Math.floor(Math.random(n) * n),
-//             Math.floor(Math.random(n) * n)
-//         ]
-//         while(r[0] === r[1]) r[1] = Math.floor(Math.random(n) * n)
-//         return r
-//     }
-
-// }
