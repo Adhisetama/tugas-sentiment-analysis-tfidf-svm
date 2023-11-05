@@ -28,8 +28,18 @@ class TFIDF_Vectorizer {
      */
     constructor(vocabulary) {
         this.trainDocuments = []
+        this.vocabulary = []
+        this.idf = []
+    }
+
+
+    /**
+     * 
+     * @param {string[]} vocabulary array of terms
+     */
+    setVocabulary(vocabulary) {
         this.vocabulary = vocabulary
-        this.idf = Array(vocabulary.length)
+        this.idf.length = vocabulary.length
     }
 
     /**

@@ -24,9 +24,9 @@ class SVM {
         this.Y = Y_train // array berisi class  y_i
                 
         // variabel untuk perhitungan SVM
-        this.N = X.length       // banyak data training
-        this.P = X[0].length    // banyak fitur/dimensi data
-        this.alpha = Array(this.N)                           // parameter alpha di lagrange multiplier
+        this.N = this.X.length       // banyak data training
+        this.P = this.X[0].length    // banyak fitur/dimensi data
+        this.alpha = Array(this.N).fill(0)                   // parameter alpha di lagrange multiplier
         this.C = options.C !== undefined ? options.C : 10    // hyperparameter C. default=10
         this.E = options.E !== undefined ? options.E : 0.01  // hyperparameter epsilon (error tolerance). default=0.01
 
@@ -37,7 +37,7 @@ class SVM {
 
     iterate() {
         // pick 2 random index
-        [r, s]     = this.Math.pickTwo(this.N)
+        let [r, s] = this.Math.pickTwo(this.N)
 
         // assign variable (biar ga dikit" thas this thas this)
         const [a_r, a_s] = [this.alpha[r], this.alpha[s]]
@@ -80,7 +80,7 @@ class SVM {
                     - y_s
                     )
         // ^^ semoga code nya gaada yg salah plis
-        
+
         // x di kondisi critical: f'(x) = ax+b = 0
         // x = -b/2a
         let a_r_new = -b / (2*a)
@@ -143,9 +143,28 @@ class SVM {
         return accumulator
     }
 
-    // lagrangianDualForm() {
-    //     // TODO: buat ini
-    // }
+    getWeight() {
+        let accumulator = Array(this.P).fill(0)
+        for (let i=0; i<this.N; i++) {
+            accumulator = accumulator.map((acc_j, j) => acc_j + this.alpha[i] * this.Y[i] * this.X[i][j])
+        }
+        this.w = accumulator
+        return this.w
+    }
+
+    getBias() {
+        let n = 0
+        let b = 0
+        let w = this.getWeight()
+        for (let i=0; i<this.N; i++) {
+            if (this.alpha[i] === 0) continue 
+            b += this.Y[i] - this.Math.dot(w, this.X[i])
+            n++
+        }
+        this.b = b/n
+        return this.b
+    }
+
 
     Math = {
         /**
