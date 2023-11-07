@@ -2,7 +2,7 @@
 <script src="./svm.js"></script>
 <script>
 
-const X = [[2,1], [2,2], [4,1], [4,4], [4,6], [6,3]]
+const X = [[2,1], [2,2], [4,1], [-4,-4], [-4,-6], [-6,-3]]
 const Y = [1,1,1,-1,-1,-1]
 
 const svm1 = new SVM(X, Y)
@@ -23,5 +23,6 @@ console.log(svm1.getBias())
         svm1.getWeight(),
         svm1.getBias()
     )
+    C.drawAxis()
 
 </script>

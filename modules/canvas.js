@@ -6,6 +6,7 @@
  * TODO:
  * - rapikan
  * - buat sistem padding
+ * - FIX BUG ON Y COORDINATE
  */
 
 class Canvas
@@ -17,8 +18,9 @@ class Canvas
     constructor(canvas) {
         this.canvas = canvas
         this.ctx = this.canvas.getContext('2d')
-        this.w = () => this.canvas.offsetWidth
-        this.h = () => this.canvas.offsetHeight
+        this.padding = 20
+        this.w = () => this.canvas.offsetWidth - 2*this.padding
+        this.h = () => this.canvas.offsetHeight - 2*this.padding
         this.bjir = {}
     }
 
@@ -47,6 +49,7 @@ class Canvas
 
     drawLine(FromTo) {
         if (FromTo.length == 0) return
+        this.ctx.strokeStyle = "black"
         this.ctx.moveTo(...FromTo[0])
         this.ctx.lineTo(...FromTo[1])
         this.ctx.stroke()
@@ -88,9 +91,10 @@ class Canvas
      */
     convertToCanvasCoordinate(point) {
         // canvas_coord = (original_coord - min_coord) * (canvas_coord_length / original_coord_length)
+        // karena ada padding, maka canvas_coord <-- canvas_cord + padding
         return [
-            (point[0] - this.bjir.min_X) * (this.w() / (this.bjir.max_X - this.bjir.min_X)),
-            (point[1] - this.bjir.min_Y) * (this.h() / (this.bjir.max_Y - this.bjir.min_Y)),
+            (point[0] - this.bjir.min_X) * (this.w() / (this.bjir.max_X - this.bjir.min_X)) + this.padding,
+            (point[1] - this.bjir.min_Y) * (this.h() / (this.bjir.max_Y - this.bjir.min_Y)) + this.padding,
             point[2]
         ]
     }
@@ -130,6 +134,22 @@ class Canvas
 
         // kalo bener harusnya FromTo berisi 2 ato 0 elemen
         return FromTo.map(p => this.convertToCanvasCoordinate(p))
+    }
+
+    drawAxis() {
+        // check if 0,0 inside canvas
+        const O = this.convertToCanvasCoordinate([0,0,1])
+        this.ctx.strokeStyle = "gray"
+        if (this.padding < O[0] < this.w()) {
+            this.ctx.moveTo(O[0], this.h() + 2*this.padding)
+            this.ctx.lineTo(O[0], 0)
+            this.ctx.stroke()
+        }
+        if (this.padding < O[1] < this.h()) {
+            this.ctx.moveTo(0, O[1])
+            this.ctx.lineTo(this.w() + 2*this.padding, O[1])
+            this.ctx.stroke()
+        }
     }
 
 }
