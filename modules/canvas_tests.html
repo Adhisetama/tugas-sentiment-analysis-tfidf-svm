@@ -1,0 +1,27 @@
+<canvas width="500px" height="500px" id="c" style="border: 1px solid gray;"></canvas>
+<script src="./svm.js"></script>
+<script>
+
+const X = [[2,1], [2,2], [4,1], [4,4], [4,6], [6,3]]
+const Y = [1,1,1,-1,-1,-1]
+
+const svm1 = new SVM(X, Y)
+for (let i=0; i<50; i++) {
+    svm1.iterate()
+}
+console.log(svm1.getWeight())
+console.log(svm1.getBias())
+
+</script>
+
+<script src="canvas.js"></script>
+<script>
+
+    const C = new Canvas(document.getElementById("c"))
+    C.draw(
+        X.map((p, i) => [...p, Y[i]]),
+        svm1.getWeight(),
+        svm1.getBias()
+    )
+
+</script>
