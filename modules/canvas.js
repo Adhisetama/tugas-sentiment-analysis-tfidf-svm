@@ -94,7 +94,7 @@ class Canvas
         // karena ada padding, maka canvas_coord <-- canvas_cord + padding
         return [
             (point[0] - this.bjir.min_X) * (this.w() / (this.bjir.max_X - this.bjir.min_X)) + this.padding,
-            (point[1] - this.bjir.min_Y) * (this.h() / (this.bjir.max_Y - this.bjir.min_Y)) + this.padding,
+            this.h()-((point[1] - this.bjir.min_Y) * (this.h() / (this.bjir.max_Y - this.bjir.min_Y)) + this.padding),
             point[2]
         ]
     }
