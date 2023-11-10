@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TF-IDF Vectorizer</title>
+</head>
+<!-- <link rel="stylesheet" href="./css/reset.css"> -->
+<style>
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 3px;
+        border: 1px solid red;
+    }
+    table {
+      border-collapse: collapse;
+    }
+    th, td {
+      border: 1px solid black;
+      text-align: left;
+    }
+
+    /* custom CSS */
+    #main-container {
+        width: auto;
+        padding: 50px;
+        margin: 0;
+    }
+    #form-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 1fr;
+    }
+    #vocabulary-container {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        grid-template-rows: 1fr;
+    }
+    #add-data-container table tr td * {
+        width: 100%;
+    }
+    #add-data-container > button {
+        padding: 5px 10px;
+    }
+
+</style>
+<body>
+    <div id="main-container">
+
+        <h2>TF-IDF Vectorizer</h2>
+
+        <div id="form-container">
+            <div id="upload-csv-container">
+                <h3>upload data</h3>
+                <p>format: csv</p>
+                <p>example:</p>
+                <table>
+                    <tr><th>document (string)</th><th>class (1 or -1)</th></tr>
+                    <tr><td>"this is sample document"</td><td>1</td></tr>
+                    <tr><td>"this is also a sample document"</td><td>-1</td></tr>
+                    <tr><td>...</td><td>...</td></tr>
+                </table>
+                <form action="">
+                    <input type="file" id="csv" accept=".csv">
+                </form>
+            </div>
+            <div id="add-data-container">
+                <h3>or insert data manually</h3>
+                <table style="width: 100%;">
+                    <thead>
+                        <tr><th>document</th><th>class</th><th></th></tr>
+                    </thead>
+                    <tbody id="add-data-table">
+                        <tr>
+                            <td><input type="text" placeholder="type sentence here"></td>
+                            <td><input type="number" min="-1" max="1" step="2" value="1"></td>
+                            <td><button>🗑️</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <button id="add-document">+</button>
+                <button id="submit-document">Submit</button>
+            </div>
+        </div>
+
+        <div id="vocabulary-container">
+            <div id="term-count-container">
+                <p>Σ words</p>
+                <table>
+                    <thead><tr><th>term</th><th>count</th><th>select as vocab</th></tr></thead>
+                    <tbody>
+                        <tr>
+                            <td>bjir</td>
+                            <td>10</td>
+                            <td><input type="checkbox"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div id="term-container">
+                <p>define vocabulary:</p>
+                <p style="font-family: monospace;"></p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const Data = {
+            documents: [],
+            classes: []
+        }
+
+        // handle csv upload
+        document.getElementById("csv").addEventListener('change', event => {
+            const file = event.target.files[0]
+            if (file) {
+                const reader = new FileReader()
+                reader.onload = e => {
+                    const lines = e.target.result.split('\n')
+                    for (const line of lines) {
+                        let [document, classes] = line.split(',')
+                        document = document.trim()
+                        classes = parseInt(classes)
+                        if (classes === -1 || classes === 1) {
+                            Data.documents.push(document)
+                            Data.classes.push(classes)
+                            console.log("data parsed: ", [document, classes])
+                        }
+                    }
+                }
+                reader.readAsText(file)
+            }
+            document.dispatchEvent(new Event('documentsHasBeenInserted'))
+        })
+
+        // handle insert data manually
+        document.getElementById("add-document").addEventListener("click", event => {
+            const tr = document.createElement("tr")
+            tr.innerHTML =
+            `   <td><input type="text" placeholder="type sentence here"></td>
+                <td><input type="number" min="-1" max="1" step="2" value="1"></td>
+                <td><button>🗑️</button></td>`
+            document.getElementById("add-data-table").appendChild(tr)
+        })
+        document.getElementById("submit-document").addEventListener("click", event => {
+            document.querySelectorAll("#add-data-table tr").forEach((row, i) => {
+                // if (i === 0) return
+                Data.documents.push(row.children[0].firstChild.value)
+                Data.classes.push(row.children[1].firstChild.value)
+            })
+            document.dispatchEvent(new Event('documentsHasBeenInserted'))
+        })
+
+
+    </script>
+
+    <script src="./modules/tf-idf.js"></script>
+    <script>
+        // handle changes of page
+        document.addEventListener('documentsHasBeenInserted', e => {
+            const Documents = Data.documents.map(e => TFIDF_Document(e.split(' ')))
+            
+            // hitung total kata muncul
+            let bagOfWords = {}
+            Documents.forEach(d => {
+                for (const word in d.bagOfWords) {
+                    if (bagOfWords.hasOwnProperty(word))
+                        bagOfWords[word] += d.bagOfWords[word]
+                    else
+                        bagOfWords[word] = d.bagOfWords[word]
+                }
+            })
+        })
+    </script>
+</body>
+</html>

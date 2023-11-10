@@ -24,9 +24,8 @@
 class TFIDF_Vectorizer {
 
     /**
-     * @param {string[]} vocabulary 
      */
-    constructor(vocabulary) {
+    constructor() {
         this.trainDocuments = []
         this.vocabulary = []
         this.idf = []

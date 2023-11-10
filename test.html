@@ -20,7 +20,8 @@
         ]
 
         // const Vectorizer = new TFIDF_Vectorizer(["battle", "good", "fool", "wit"])
-        const Vectorizer = new TFIDF_Vectorizer([..."the cat chased mouse".split(' '), "ran", "away"])
+        const Vectorizer = new TFIDF_Vectorizer()
+        Vectorizer.setVocabulary([..."the cat chased mouse".split(' '), "ran", "away"])
         Vectorizer.insertTrainDocuments(...dataset)
 
         // dataset.forEach(d => {
