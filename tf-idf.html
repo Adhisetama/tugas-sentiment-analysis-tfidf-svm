@@ -35,13 +35,17 @@
     #vocabulary-container {
         display: grid;
         grid-template-columns: 2fr 1fr;
-        grid-template-rows: 1fr;
+        grid-template-rows: 1fr 30px;
     }
     #add-data-container table tr td * {
         width: 100%;
     }
     #add-data-container > button {
         padding: 5px 10px;
+    }
+
+    #vectorize-document {
+        grid-column: span 2;
     }
 
 </style>
@@ -85,23 +89,24 @@
         </div>
 
         <div id="vocabulary-container">
-            <div id="term-count-container">
-                <p>Σ words</p>
+            <form id="term-count-container">
+                <h3>Σ words</h3>
                 <table>
                     <thead><tr><th>term</th><th>count</th><th>select as vocab</th></tr></thead>
-                    <tbody>
-                        <tr>
+                    <tbody id="bag-of-words">
+                        <!-- <tr>
                             <td>bjir</td>
                             <td>10</td>
                             <td><input type="checkbox"></td>
-                        </tr>
+                        </tr> -->
                     </tbody>
                 </table>
-            </div>
+            </form>
             <div id="term-container">
-                <p>define vocabulary:</p>
-                <p style="font-family: monospace;"></p>
+                <h3>define vocabulary:</h3>
+                <p style="font-family: monospace;" id="terms"></p>
             </div>
+            <button id="vectorize-document"><b>Vectorize Document</b></button>
         </div>
 
     </div>
@@ -114,6 +119,8 @@
 
         // handle csv upload
         document.getElementById("csv").addEventListener('change', event => {
+            Data.documents.length = 0
+            Data.classes.length = 0
             const file = event.target.files[0]
             if (file) {
                 const reader = new FileReader()
@@ -129,10 +136,10 @@
                             console.log("data parsed: ", [document, classes])
                         }
                     }
+                    document.dispatchEvent(new Event('documentsHasBeenInserted'))
                 }
                 reader.readAsText(file)
             }
-            document.dispatchEvent(new Event('documentsHasBeenInserted'))
         })
 
         // handle insert data manually
@@ -145,6 +152,8 @@
             document.getElementById("add-data-table").appendChild(tr)
         })
         document.getElementById("submit-document").addEventListener("click", event => {
+            Data.documents.length = 0
+            Data.classes.length = 0
             document.querySelectorAll("#add-data-table tr").forEach((row, i) => {
                 // if (i === 0) return
                 Data.documents.push(row.children[0].firstChild.value)
@@ -158,12 +167,24 @@
 
     <script src="./modules/tf-idf.js"></script>
     <script>
+        const Documents = []
+        const bagOfWords = {}
+        const vocabulary = []
+
         // handle changes of page
         document.addEventListener('documentsHasBeenInserted', e => {
-            const Documents = Data.documents.map(e => TFIDF_Document(e.split(' ')))
-            
+
+            // reset previous input
+            Documents.length = 0
+            vocabulary.length = 0
+            for (const word in bagOfWords) delete bagOfWords[word]
+            Data.documents.forEach(e => Documents.push(new TFIDF_Document(e.split(' '))))
+            const tbody = document.getElementById("bag-of-words")
+            const terms = document.getElementById("terms")
+            tbody.innerHTML = ""
+            terms.innerHTML = ""
+
             // hitung total kata muncul
-            let bagOfWords = {}
             Documents.forEach(d => {
                 for (const word in d.bagOfWords) {
                     if (bagOfWords.hasOwnProperty(word))
@@ -172,7 +193,38 @@
                         bagOfWords[word] = d.bagOfWords[word]
                 }
             })
+
+            // tampilkan di tabel, kalo di klik checkbox nanti tabel satunya berubah
+            // (dah gausah dibaca, aku jg pusing baca ini)
+            for (const word in bagOfWords) {
+                const tr = document.createElement("tr")
+                tr.innerHTML = `<td>${word}</td><td>${bagOfWords[word]}</td><td><input type="checkbox" name="${word}"></td>`
+                tbody.appendChild(tr)
+            }
+
+            // listen untuk checkbox
+            document.getElementById("term-count-container").addEventListener("change", event => {
+                // scan semua checkbox, mana yg dicheck
+                vocabulary.length = 0
+                for (const element of event.currentTarget.elements) {
+                    if (element.checked) {
+                        vocabulary.push(element.name)
+                    }
+                }
+                terms.innerText = JSON.stringify(vocabulary)
+            })
         })
+
+        // vectorize document
+        const Vectorizer = new TFIDF_Vectorizer()
+        document.getElementById("vectorize-document").addEventListener("click", event => {
+            Vectorizer.trainDocuments.length = 0
+            Vectorizer.insertTrainDocuments(...Documents)
+            Vectorizer.setVocabulary(vocabulary)
+            Vectorizer.calculateIDF()
+            document.dispatchEvent(new Event("DocumentsVectorized"))
+        })
+
     </script>
 </body>
 </html>
