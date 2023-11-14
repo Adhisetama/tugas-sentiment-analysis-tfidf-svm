@@ -57,11 +57,16 @@ class TFIDF_Vectorizer {
                 df += trainDocument.words.includes(term) ? 1 : 0
             })
             // hitung idf berdasar df
-            console.log(df)
+            // console.log(df)
             this.idf[term_index] = Math.log(this.trainDocuments.length / df)
         })
     }
 
+    /**
+     * 
+     * @param {TFIDF_Document} document 
+     * @returns {number[]} representasi vektor dari dokumen dgn TF-IDF
+     */
     vectorizeDocument(document) {
         const vector = [...this.idf]
         document.calculateTF(this.vocabulary).forEach((tf, index) => {
