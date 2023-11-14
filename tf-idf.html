@@ -55,7 +55,7 @@
         grid-template-columns: auto auto ;
     } */
 
-    #document-vector-container {
+    #document-vector-container, #idf-vectorizer-container {
         display: flex;
         width: 100%;
     }
@@ -122,42 +122,66 @@
         </div>
 
         <div id="document-vector-container">
+            <table style="flex: 2">
+                <thead id="thead-vector">
+                    <tr>
+                        <th rowspan="2">document</th>
+                        <th colspan="3">vector x<sub>i</sub></th>
+                        <th rowspan="2">class y<sub>i</sub></th>
+                    </tr>
+                    <tr>
+                        <th>tes</th>
+                        <th>tes</th>
+                        <th>tes</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody-vector">
+                    <tr>
+                        <td>bjir azka hijau ...</td>
+                        <td>1</td>
+                        <td>1</td>
+                        <td>1</td>
+                        <td>-1</td>
+                    </tr>
+                </tbody>
+            </table>
             <div style="flex: 1">
-                <table>
-                    <thead id="thead-vector">
-                        <tr>
-                            <th rowspan="2">document</th>
-                            <th colspan="3">vector x<sub>i</sub></th>
-                            <th rowspan="2">class y<sub>i</sub></th>
-                        </tr>
-                        <tr>
-                            <th>tes</th>
-                            <th>tes</th>
-                            <th>tes</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tbody-vector">
-                        <tr>
-                            <td>bjir azka hijau ...</td>
-                            <td>1</td>
-                            <td>1</td>
-                            <td>1</td>
-                            <td>-1</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            <div style="flex: 0">
+                <h3>2D space representation</h3>
                 <canvas id="vector-canvas"></canvas>
                 <br>
-                <label for="vector-x">sumbu-x</label>
-                <select name="vector-x" id="vector-x"></select>
-                <label for="vector-y">sumbu-y</label>
-                <select name="vector-y" id="vector-y"></select>
+                <form action="">
+                    <label for="vector-x">sumbu-x</label>
+                    <select name="vector-x" id="vector-x" value="0"></select>
+                    <label for="vector-y">sumbu-y</label>
+                    <select name="vector-y" id="vector-y" value="0"></select>
+                </form>
             </div>
         </div>
-        <div>c</div>
-        <div>d</div>
+        <div id="idf-vectorizer-container">
+            <table style="flex: 0;">
+                <thead><tr><th>term</th><th>IDF</th></tr></thead>
+                <tbody id="table-idf">
+                    <tr><td>term1</td><td>idf1</td></tr>
+                </tbody>
+            </table>
+            <div id="idf-vectorizer" style="flex: 1;">
+                <h3>vectorize a document</h3>
+                <textarea id="textarea-vectorizer" rows="3" style="width: 100%;"></textarea>
+                <button id="bakso-bakar">convert to vector</button>
+                <table style="display: inline;">
+                    <tr>
+                        <th rowspan="2">vector</th>
+                        <th colspan="2" id="balsem-geliga">feature (terms)</th>
+                    </tr>
+                    <tr id="rolled-oat">
+                        <th>tes</th>
+                        <th>tes</th>
+                    </tr>
+                    <tr id="bakso1"><th>TF</th><td>2.642</td><td>1.002</td></tr>
+                    <tr id="bakso2"><th>TF-IDF</th><td>2.642</td><td>1.002</td></tr>
+                </table>
+            </div>
+        </div>
 
     </div>
 
@@ -165,7 +189,8 @@
     <script>
         const Data = {
             documents: [],
-            classes: []
+            classes: [],
+            vectors: []
         }
 
         // handle csv upload
@@ -283,6 +308,7 @@
     </script>
     
     <!-- document has been vectorized -->
+    <script src="./modules/canvas.js"></script>
     <script>
         document.addEventListener("documentsHasBeenVectorized", event => {
             // INISIASI TABEL
@@ -292,7 +318,7 @@
                 sego.children[1].setAttribute("colspan", `${Vectorizer.vocabulary.length}`)
                 goreng.innerHTML = ""
                 Vectorizer.vocabulary.forEach(term => {
-                    const th = document.createElement("td")
+                    const th = document.createElement("th")
                     th.innerText = `"${term}"`
                     goreng.appendChild(th)
                 })
@@ -305,6 +331,7 @@
                 for (const d of Vectorizer.trainDocuments) {
                     const docString = d.words.join(" ")
                     const docVector = Vectorizer.vectorizeDocument(d)
+                    Data.vectors.push(docVector)
                     const tr = document.createElement("tr")
                     // note: vv print document as string tp batasin sampe 25 huruf
                     let tr_innerHTML = `<td${docString.length > 25 ? ` title="${docString}">"${docString.substring(0, 25)}..."` : `>"${docString}"`}</td>`
@@ -315,9 +342,75 @@
                     if (++i > 20) break;
                 }
             }
-    
-            const vectorCanvas = document.getElementById("vector-canvas")
+            
+            // INISIASI CANVAS
+            {
+                const vectorCanvas = document.getElementById("vector-canvas")
+                const canvas = new Canvas(vectorCanvas, {
+                    width: 300,
+                    height: 300,
+                    padding: 0
+                })
+                const selectX = document.getElementById("vector-x")
+                const selectY = document.getElementById("vector-y")
+                let select_innerHTML = ""
+                Vectorizer.vocabulary.forEach((term, index) => {
+                    select_innerHTML += `<option value="${index}">${term}</option>`
+                })
+                selectX.innerHTML = selectY.innerHTML = select_innerHTML
+                const redrawCanvas = (axisX, axisY) => {
+                    canvas.clear()
+                    canvas.drawPoints(
+                        Data.vectors.map(p => [p[axisX], p[axisY]]),
+                        Data.classes.map(c => c == 1 ? "blue" : "red")
+                    )
+                    canvas.drawAxis()
+                }
+                selectX.addEventListener("change", e => redrawCanvas(selectX.value, selectY.value))
+                selectY.addEventListener("change", e => redrawCanvas(selectX.value, selectY.value))
+            }
+                    
+            // INISIASI VECTORIZER:
+            {
+                document.getElementById("balsem-geliga")
+                    .setAttribute("colspan", `${Vectorizer.vocabulary.length}`)
+                const nggatau = document.getElementById("rolled-oat")
+                nggatau.innerHTML = ""
+                document.getElementById("bakso1").innerHTML = "<th>TF</th>" + "<td></td>".repeat(Vectorizer.vocabulary.length)
+                document.getElementById("bakso2").innerHTML = "<th>TF-IDF</th>" + "<td></td>".repeat(Vectorizer.vocabulary.length)
+                Vectorizer.vocabulary.forEach(term => {
+                    const th = document.createElement("th")
+                    th.innerText = `"${term}"`
+                    nggatau.appendChild(th)
+                })
+                document.getElementById("bakso-bakar").addEventListener("click", e => {
+                    // yah intinya gitu.
+                    const d = new TFIDF_Document(document.getElementById("textarea-vectorizer").value.trim().split(" "))
+                    let tf_innerHTML = "<th>TF</th>"
+                    let tfidf_innerHTML = "<th>TF-IDF</th>"
+                    d.calculateTF(Vectorizer.vocabulary).forEach(tf => {
+                        tf_innerHTML += `<td>${tf.toFixed(5)}</td>`
+                    })
+                    Vectorizer.vectorizeDocument(d).forEach(tfidf => {
+                        tfidf_innerHTML += `<td>${tfidf.toFixed(5)}</td>`
+                    })
+                    document.getElementById("bakso1").innerHTML = tf_innerHTML
+                    document.getElementById("bakso2").innerHTML = tfidf_innerHTML
+                })
+            }
+        
+            // INISIASI TABEL IDF
+            {
+                const tableIDF = document.getElementById("table-idf")
+                tableIDF.innerHTML = ""
+                Vectorizer.vocabulary.forEach((term, index) => {
+                    tableIDF.innerHTML += `<tr><td>"${term}"</td><td>${Vectorizer.idf[index]}</td></tr>`
+                })
+            }
+
         })
+
     </script>
+    <script>let bejirhijau</script>
 </body>
 </html>

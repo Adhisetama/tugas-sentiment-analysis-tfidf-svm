@@ -15,15 +15,18 @@
  * 
  * // 3.| untuk  gambar garis:
  * canvas.drawLine(w, b) // garis direpresentasikan dengan weight vektor w dan bias b
- *                       // note: sebelum .drawLine() harus ada .drawPoints() untuk tentuin konversi koordinat
  * 
  * // 4.| untuk gambar axis:
  * canvas.drawAxis()
  * 
- * // note: untuk 3. & 4., jika garisnya diluar scope canvas, ngga akan kegambar
+ * // note: untuk 3. & 4.:
+ *      - sebelumnya harus .drawPoints() dulu untuk tentuin skala konversi koordinat
+ *      - jika garisnya diluar scope canvas, ngga akan kegambar
  * 
  * // 5.| untuk clear canvas
  * canvas.clear()
+ * 
+ * // note: canvas ini hanya support vektor 2d. parameter p di .drawPoints() dan w di .drawLine() harus 2 dimensi
  * 
  */
 
@@ -43,6 +46,8 @@ class Canvas
         this.canvas.style.border = "1px solid black"
         this.canvas.style.width = options.width !== undefined ? options.width + "px" : "500px"
         this.canvas.style.height = options.height !== undefined ? options.height + "px" : "500px"
+        this.canvas.setAttribute("width", options.width !== undefined ? options.width + "px" : "500px")
+        this.canvas.setAttribute("height", options.height !== undefined ? options.height + "px" : "500px")
         this.padding = options.padding ? options.padding : 20
 
         this.ctx = this.canvas.getContext('2d')
@@ -172,7 +177,7 @@ class Canvas
     }
 
     clear() {
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
+        this.ctx.clearRect(0, 0, this.canvas.offsetWidth, this.canvas.offsetHeight)
     }
 
 }
