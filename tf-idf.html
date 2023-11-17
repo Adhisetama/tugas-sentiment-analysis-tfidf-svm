@@ -58,6 +58,7 @@
     #document-vector-container, #idf-vectorizer-container {
         display: flex;
         width: 100%;
+        flex-wrap: wrap;
     }
 
 </style>
@@ -71,10 +72,17 @@
                 <h3>upload data</h3>
                 <p>format: csv</p>
                 <p>example:</p>
-                <table>
-                    <tr><th>document (string)</th><th>class (1 or -1)</th></tr>
+                <table style="width: 100%;">
+                    <tr><th>document (string)</th><th>class (1 or -1)</th><td rowspan="4" style="font-family: monospace;">
+                    document, class<br>
+                    this is a sample document, 1<br>
+                    this also a sample document, -1<br>
+                    make sure the data is already preprocessed, 1<br>
+                    string defined without a quotation mark, 1<br>
+                    the csv file should look almost like this, -1
+                    </td></tr>
                     <tr><td>"this is sample document"</td><td>1</td></tr>
-                    <tr><td>"this is also a sample document"</td><td>-1</td></tr>
+                    <tr><td>"this also a sample document"</td><td>-1</td></tr>
                     <tr><td>...</td><td>...</td></tr>
                 </table>
                 <form action="">
@@ -118,7 +126,7 @@
                 <h3>define vocabulary:</h3>
                 <p style="font-family: monospace;" id="terms"></p>
             </div>
-            <button id="vectorize-document"><b>Vectorize Document</b></button>
+            <button id="vectorize-document"><b>Vectorize Documents</b></button>
         </div>
 
         <div id="document-vector-container">
@@ -156,6 +164,7 @@
                     <select name="vector-y" id="vector-y" value="0"></select>
                 </form>
             </div>
+            <button style="width: 100%;" id="download-dataset-csv">Download datased as CSV</button>
         </div>
         <div id="idf-vectorizer-container">
             <table style="flex: 0;">
@@ -168,7 +177,7 @@
                 <h3>vectorize a document</h3>
                 <textarea id="textarea-vectorizer" rows="3" style="width: 100%;"></textarea>
                 <button id="bakso-bakar">convert to vector</button>
-                <table style="display: inline;">
+                <table style="display: block;">
                     <tr>
                         <th rowspan="2">vector</th>
                         <th colspan="2" id="balsem-geliga">feature (terms)</th>
@@ -181,6 +190,7 @@
                     <tr id="bakso2"><th>TF-IDF</th><td>2.642</td><td>1.002</td></tr>
                 </table>
             </div>
+            <button style="width: 100%;">Download IDF as JSON</button>
         </div>
 
     </div>
@@ -335,7 +345,7 @@
                     const tr = document.createElement("tr")
                     // note: vv print document as string tp batasin sampe 25 huruf
                     let tr_innerHTML = `<td${docString.length > 25 ? ` title="${docString}">"${docString.substring(0, 25)}..."` : `>"${docString}"`}</td>`
-                    docVector.forEach(x => tr_innerHTML += `<td>${x.toFixed(5)}</td>`)
+                    docVector.forEach(x => tr_innerHTML += `<td>${x.toFixed(7)}</td>`)
                     tr_innerHTML += `<td>${Data.classes[i]}</td>`
                     tr.innerHTML = tr_innerHTML
                     tbody.appendChild(tr)
@@ -389,10 +399,10 @@
                     let tf_innerHTML = "<th>TF</th>"
                     let tfidf_innerHTML = "<th>TF-IDF</th>"
                     d.calculateTF(Vectorizer.vocabulary).forEach(tf => {
-                        tf_innerHTML += `<td>${tf.toFixed(5)}</td>`
+                        tf_innerHTML += `<td>${tf.toFixed(7)}</td>`
                     })
                     Vectorizer.vectorizeDocument(d).forEach(tfidf => {
-                        tfidf_innerHTML += `<td>${tfidf.toFixed(5)}</td>`
+                        tfidf_innerHTML += `<td>${tfidf.toFixed(7)}</td>`
                     })
                     document.getElementById("bakso1").innerHTML = tf_innerHTML
                     document.getElementById("bakso2").innerHTML = tfidf_innerHTML
@@ -404,7 +414,14 @@
                 const tableIDF = document.getElementById("table-idf")
                 tableIDF.innerHTML = ""
                 Vectorizer.vocabulary.forEach((term, index) => {
-                    tableIDF.innerHTML += `<tr><td>"${term}"</td><td>${Vectorizer.idf[index]}</td></tr>`
+                    tableIDF.innerHTML += `<tr><th>"${term}"</th><td>${Vectorizer.idf[index].toFixed(7)}</td></tr>`
+                })
+            }
+
+            // INISIASI BUTTON DOWNLOAD
+            {
+                document.getElementById("download-dataset-csv").addEventListener("click", event => {
+                    // parse dataset menjadi csv
                 })
             }
 

@@ -7,6 +7,21 @@
 //      b:scalar
 // dengan algoritma SVM
 
+/**
+ * DOCUMENTATION
+ * 
+ * // 1.| inisialisasi class
+ * const svm = new SVM(x_train, y_train)
+ * 
+ * // 2.| iterasi optimisasi (lakukan berulang")
+ * svm.iterate()
+ * 
+ * // 3.| hitung weight & bias
+ * let w = svm.getWeight()
+ * let b = svm.getBias()
+ * 
+ */
+
 class SVM {
 
     /**
