@@ -128,6 +128,9 @@ class Canvas
      * @returns 
      */
     convertVectorToLine(w, b) {
+        // cek w
+        if (w.some(e => e === undefined) || w[1] === 0) return []
+
         // equation y = mx + c
         const m = -w[0]/w[1]
         const c = -b/w[1]

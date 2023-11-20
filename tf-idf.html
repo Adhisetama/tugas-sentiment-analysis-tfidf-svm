@@ -55,7 +55,7 @@
         grid-template-columns: auto auto ;
     } */
 
-    #document-vector-container, #idf-vectorizer-container {
+    #document-vector-container, #idf-vectorizer-container, #svm-container {
         display: flex;
         width: 100%;
         flex-wrap: wrap;
@@ -190,7 +190,24 @@
                     <tr id="bakso2"><th>TF-IDF</th><td>2.642</td><td>1.002</td></tr>
                 </table>
             </div>
-            <button style="width: 100%;">Download IDF as JSON</button>
+            <button style="width: 100%;" id="download-idf-json">Download IDF as JSON</button>
+        </div>
+
+        <div id="svm-container">
+            <div id="svm-display">
+                <canvas id="svm-canvas"></canvas>
+                <br>
+                <div>
+                    <label for="svm-x">sumbu-x</label>
+                    <select name="svm-x" id="svm-x" value="0"></select>
+                    <label for="svm-y">sumbu-y</label>
+                    <select name="svm-y" id="svm-y" value="0"></select>
+                    <button name="optimize-smo" id="optimize-smo">optimize (SMO)</button>
+                </div>
+            </div>
+            <div id="svm-metrics">
+                
+            </div>
         </div>
 
     </div>
@@ -319,6 +336,7 @@
     
     <!-- document has been vectorized -->
     <script src="./modules/canvas.js"></script>
+    <script src="./modules/utils.js"></script>
     <script>
         document.addEventListener("documentsHasBeenVectorized", event => {
             // INISIASI TABEL
@@ -422,12 +440,95 @@
             {
                 document.getElementById("download-dataset-csv").addEventListener("click", event => {
                     // parse dataset menjadi csv
+                    let datasetCSV = `${Vectorizer.vocabulary.join(",")},class\n`
+                    Data.vectors.forEach((vector, index) => {
+                        datasetCSV += `${vector.join(",")},${Data.classes[index]}\n`
+                    })
+                    downloadTextFile(datasetCSV, "dataset.csv")
+                })
+                document.getElementById("download-idf-json").addEventListener("click", event => {
+                    let idfJSON = {}
+                    Vectorizer.vocabulary.forEach((term, index) => {
+                        idfJSON[term] = Vectorizer.idf[index]
+                    })
+                    downloadTextFile(JSON.stringify(idfJSON, null, 2), "idf.json")
                 })
             }
 
         })
 
     </script>
-    <script>let bejirhijau</script>
+
+    <!-- svm -->
+    <script src="./modules/svm.js"></script>
+    <script>
+        /**
+         * NOTE:
+         * karena semua angka pada train_x berupa bilangan desimal yang sangat kecil, maka operasi
+         * komputasi SVM dapat menimbulkan banyak round-off & precision error (riil, udah aku coba).
+         * maka dilakukan normalization / scaling kepada semua elemen feature vector X dengan faktor
+         * 1024, yaitu 2^10 (dipilih eksponen 2 biar komputer enak ngitungnya)
+         * 
+         * sehingga bias dan weight yang nanti dihasilkan akan dibagi dengan faktor yang sama
+         * (1024) untuk dapat melihat hasil aslinya.
+         * 
+         * hal tersebut mungkin dilakukan dan hasilnya tetap valid, berikut pembuktiannnya:
+         * SVM's decision function:
+         *  f(x) = sign(w.x + b)
+         *       = sign((1024*w).(1024*x) + (1024*b))
+         * data di scale: x_scaled <-- 1024 * x
+         *       = sign(w'.x_scaled + b')
+         * penggunaan decision function untuk data yang tidak di scale:
+         *       = sign((w'/1024).(x_scaled/1024) + (b'/1024))
+         *       = sign((w'/1024).x + (b'/1024))
+         * terbukti weight dan bias cukup di scale down dengan faktor yang sama, dan
+         * SVM masih bekerja.
+        */
+        const scale = 1024
+        let svm = null
+        let canvas = null
+        document.addEventListener("documentsHasBeenVectorized", event => {
+            
+            // INISIASI SVM
+            Data.scaledVectors = Data.vectors.map(vec => vec.map(ele => ele * scale))
+            svm = new SVM(Data.scaledVectors, Data.classes)
+
+            // INISIASI CANVAS SVM
+            {
+                const svmCanvas = document.getElementById("svm-canvas")
+                canvas = new Canvas(svmCanvas, {
+                    width: 500,
+                    height: 500,
+                    padding: 20
+                })
+                const selectX = document.getElementById("svm-x")
+                const selectY = document.getElementById("svm-y")
+                let select_innerHTML = ""
+                Vectorizer.vocabulary.forEach((term, index) => {
+                    select_innerHTML += `<option value="${index}">${term}</option>`
+                })
+                selectX.innerHTML = selectY.innerHTML = select_innerHTML
+                const redrawCanvas = (axisX, axisY) => {
+                    canvas.clear()
+                    canvas.drawPoints(
+                        Data.scaledVectors.map(p => [p[axisX], p[axisY]]),
+                        Data.classes.map(c => c == 1 ? "blue" : "red")
+                    )
+                    const w = svm.getWeight()
+                    console.log([w[axisX], w[axisY]])
+                    canvas.drawLine([w[axisX], w[axisY]], svm.getBias())
+                    canvas.drawAxis()
+                }
+                selectX.addEventListener("change", e => redrawCanvas(selectX.value, selectY.value))
+                selectY.addEventListener("change", e => redrawCanvas(selectX.value, selectY.value))
+                document.getElementById("optimize-smo").addEventListener("click", event => {
+                    svm.iterate()
+                    redrawCanvas(selectX.value, selectY.value)
+                })
+            }
+
+
+        })    
+    </script>
 </body>
 </html>
