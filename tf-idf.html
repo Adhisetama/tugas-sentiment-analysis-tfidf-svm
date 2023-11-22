@@ -164,7 +164,7 @@
                     <select name="vector-y" id="vector-y" value="0"></select>
                 </form>
             </div>
-            <button style="width: 100%;" id="download-dataset-csv">Download datased as CSV</button>
+            <button style="width: 100%;" id="download-dataset-csv">Download dataset as CSV</button>
         </div>
         <div id="idf-vectorizer-container">
             <table style="flex: 0;">
@@ -204,6 +204,23 @@
                     <select name="svm-y" id="svm-y" value="0"></select>
                     <button name="optimize-smo" id="optimize-smo">optimize (SMO)</button>
                 </div>
+                <!-- contains: iteration n; ai, as, before after. w and b before after -->
+                <h4 id="svm-iteration-n">Iteration 0</h4>
+                <p id="svm-selected-i-s">selected {r, s} = {1, 2}</p>
+                <table style="width: 100%;">
+                    <thead>
+                        <tr>
+                            <th rowspan="2">variable</th><th colspan="2">value</th>
+                        </tr>
+                        <tr><th>old</th><th>new</th></tr>
+                    </thead>
+                    <tbody id="svm-iteration-detail">
+                        <tr><td>α<sub>r</sub></td></tr>
+                        <tr><td>α<sub>s</sub></td></tr>
+                        <tr><td><b>w</b></td></tr>
+                        <tr><td>b</td></tr>
+                    </tbody>
+                </table>
             </div>
             <div id="svm-metrics">
                 
@@ -491,7 +508,8 @@
             
             // INISIASI SVM
             Data.scaledVectors = Data.vectors.map(vec => vec.map(ele => ele * scale))
-            svm = new SVM(Data.scaledVectors, Data.classes)
+            const svm = new SVM(Data.scaledVectors, Data.classes)
+            let svmIteration = 0
 
             // INISIASI CANVAS SVM
             {
@@ -522,8 +540,35 @@
                 selectX.addEventListener("change", e => redrawCanvas(selectX.value, selectY.value))
                 selectY.addEventListener("change", e => redrawCanvas(selectX.value, selectY.value))
                 document.getElementById("optimize-smo").addEventListener("click", event => {
-                    svm.iterate()
+                    const w_old = svm.w
+                    const b_old = svm.b
+                    const iter = svm.iterate()
+
+                    // redraw title
+                    document.getElementById("svm-iteration-n").innerText = `Iteration ${++svmIteration}`
+                    document.getElementById("svm-selected-i-s").innerText = `selected {r, s} = {${iter.r}, ${iter.s}}`
+
+                    // redraw table
+                    const tbody = document.getElementById("svm-iteration-detail")
+                    tbody.innerHTML = "<tr><td>α<sub>r</sub></td></tr><tr><td>α<sub>s</sub></td></tr><tr><td><b>w</b></td></tr><tr><td>b</td></tr>"
+                    const [a_r, a_s, w, b] = tbody.children
+                    const appendCell = (parent, value) => {
+                        const td = document.createElement("td")
+                        td.innerText = `${value}`
+                        parent.appendChild(td)
+                    }
+                    appendCell(a_r, iter.a_r_old.toFixed(7))
+                    appendCell(a_r, iter.a_r_new.toFixed(7))
+                    appendCell(a_s, iter.a_s_old.toFixed(7))
+                    appendCell(a_s, iter.a_s_new.toFixed(7))
+                    appendCell(w, w_old.map(e => (e/scale).toFixed(7)).join(",\n"))
+                    appendCell(w, svm.getWeight().map(e => (e/scale).toFixed(7)).join(",\n"))
+                    appendCell(b, (b_old/scale).toFixed(7))
+                    appendCell(b, (svm.getBias()/scale).toFixed(7))
+
+                    // redraw canvas
                     redrawCanvas(selectX.value, selectY.value)
+
                 })
             }
 

@@ -46,7 +46,7 @@ class SVM {
         this.E = options.E !== undefined ? options.E : 0.01  // hyperparameter epsilon (error tolerance). default=0.01
 
         // optimized value
-        this.w = Array(this.N)
+        this.w = Array(this.N).fill(0)
         this.b = 0
     }
 
