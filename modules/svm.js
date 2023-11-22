@@ -50,6 +50,15 @@ class SVM {
         this.b = 0
     }
 
+    /**
+     * memprediksi class Y berdasar feature vector X yang diberi dgn w dan b
+     * @param {number[]} X_test vektor X untuk test. dimensi harus sama dengan dataset
+     * @returns {1|-1} prediksi class (1 atau -1)
+     */
+    predict(X_test) {
+        // decision function: sign of (w . x + b)
+        return this.Math.dot(X_test, this.w) + this.b > 0 ? 1 : -1
+    }
 
     /**
      * satu kali iterasi optimisasi SMO (sequential minimal optimization)
@@ -128,6 +137,46 @@ class SVM {
         
     }
 
+    /**
+     * confusion matrix:
+     *            predicted:
+     *              +    -
+     * actual: +  [[TP, FN],
+     *         -   [FP, TN]]
+     * @param {number[][]} X_test array of vectors
+     * @param {number[]} Y_test array of class of vectors
+     * @returns {number[2][2]} confusion matrix
+     */
+    getConfusionMatrix(X_test, Y_test) {
+        const Y_pred = X_test.map(X => this.predict(X))
+        const confusionMatrix = [[0,0],[0,0]]
+        Y_pred.forEach((y_i, i) => {
+            if (y_i == Y_test[i]) {
+                if (y_i == 1) confusionMatrix[0][0]++ // true positive
+                else          confusionMatrix[1][1]++ // true negative
+            } else {
+                if (y_i == 1) confusionMatrix[1][0]++ // false positive
+                else          confusionMatrix[0][1]++ // false negative
+            }
+        })
+        return confusionMatrix
+    }
+
+
+    getAccuracyMetrics(confusionMatrix) {
+        const [
+            [TP, FN],
+            [FP, TN]
+        ] = confusionMatrix
+        return {
+            accuracy: (TP + TN) / (FP + FN),
+            precision: TP / (TP + FP),
+            recall: TP / (TP + FN),
+            F1_score: 2 * (this.precision * this.recall) / (this.precision + this.recall),
+            specificity: TN / (TN + FP),
+            MCC: (TP*TN - FP*FN) / ((TP+FP)*(TP+FN)*(TN+FP)*(TN+FN))**0.5 // Matthews Correlation Coefficient
+        }
+    }
 
     /**
      * gamma adalah sebuah variabel sebagai constraint sehingga
