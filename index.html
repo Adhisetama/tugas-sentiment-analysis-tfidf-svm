@@ -313,6 +313,11 @@
                 </form>
                 <div style="grid-column: span 2;">
                     <canvas style="width: 100%;" id="svm-chart"></canvas>
+                    <h4>Try the model</h4>
+                    <p>predict the classification of document/sentence with current SVM model's weight and bias</p>
+                    <textarea style="width: 100%;" rows="5" id="predict-model-textarea"></textarea>
+                    <button id="predict-model-button">predict</button>
+                    <table id="predict-model-table"></table>
                 </div>
             </div>
         </div>
@@ -469,6 +474,7 @@
                     const docString = d.words.join(" ")
                     const docVector = Vectorizer.vectorizeDocument(d)
                     Data.vectors.push(docVector)
+                    if (++i > 20) continue
                     const tr = document.createElement("tr")
                     // note: vv print document as string tp batasin sampe 25 huruf
                     let tr_innerHTML = `<td${docString.length > 25 ? ` title="${docString}">"${docString.substring(0, 25)}..."` : `>"${docString}"`}</td>`
@@ -476,7 +482,6 @@
                     tr_innerHTML += `<td>${Data.classes[i]}</td>`
                     tr.innerHTML = tr_innerHTML
                     tbody.appendChild(tr)
-                    if (++i > 20) break;
                 }
             }
             
@@ -706,6 +711,53 @@
                 })
             }
 
+
+            // PREDICT MODEL
+            document.getElementById("predict-model-button").addEventListener("click", event => {
+
+                // table
+                const table = document.getElementById("predict-model-table")
+                table.innerHTML = 
+                        `<tr>
+                            <td colspan="4">as vector</td>
+                            <td colspan="6">SVM</td>
+                        </tr>
+                        <tr>
+                            <th>Vocab</th>
+                            <th>TF</th>
+                            <th>IDF</th>
+                            <th>x</th>
+                            <th>w</th>
+                            <th colspan="2">x•w</th>
+                            <th>b</th>
+                            <th>x•w + b</th>
+                            <th>sign(x•w + b)</th>
+                        </tr>`
+
+                // as vector
+                const doc = new TFIDF_Document(document.getElementById("predict-model-textarea").value.trim().split(" "))
+                const tf = doc.calculateTF(Vectorizer.vocabulary).map(e => e.toFixed(7))
+                const idf = Vectorizer.idf.map(e => e.toFixed(7))
+                const x = Vectorizer.vectorizeDocument(doc).map(e => e.toFixed(7))
+                
+                // svm
+                const w = svm.getWeight().map(e => e / scale).map(e => e.toFixed(7))
+                const b = (svm.getBias() / scale)
+                const x_dot_w = svm.Math.dot(x, w)
+                const bjir = x_dot_w + b
+                const pred = bjir > 0 ? 1 : -1
+
+                for (let i = 0; i < svm.P; i++) {
+                    const tr = document.createElement("tr")
+                    let tr_innerHTML = `<td>"${Vectorizer.vocabulary[i]}"</td><td>${tf[i]}</td><td>${idf[i]}</td><td>${x[i]}</td><td>${w[i]}</td><td>${(x[i]*w[i]).toFixed(7)}</td>`
+                    if (i == 0) {
+                        tr_innerHTML += `<td rowspan="${svm.P}">${x_dot_w.toFixed(7)}</td><td rowspan="${svm.P}">${b.toFixed(7)}</td><td rowspan="${svm.P}">${bjir.toFixed(7)}</td><td rowspan="${svm.P}">${pred}</td>`
+                    }
+                    tr.innerHTML = tr_innerHTML
+                    table.appendChild(tr)
+                }
+
+            })
 
         })    
     </script>
