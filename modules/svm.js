@@ -168,11 +168,12 @@ class SVM {
             [TP, FN],
             [FP, TN]
         ] = confusionMatrix
+        const [precision, recall] = [TP / (TP + FP), TP / (TP + FN)]
         return {
-            accuracy: (TP + TN) / (FP + FN),
-            precision: TP / (TP + FP),
-            recall: TP / (TP + FN),
-            F1_score: 2 * (this.precision * this.recall) / (this.precision + this.recall),
+            accuracy: (TP + TN) / (TP + TN + FP + FN),
+            precision: precision,
+            recall: recall,
+            F1_score: 2 * (precision * recall) / (precision + recall),
             specificity: TN / (TN + FP),
             MCC: (TP*TN - FP*FN) / ((TP+FP)*(TP+FN)*(TN+FP)*(TN+FN))**0.5 // Matthews Correlation Coefficient
         }
