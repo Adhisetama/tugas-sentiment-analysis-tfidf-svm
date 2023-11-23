@@ -163,7 +163,7 @@ class SVM {
     }
 
 
-    getAccuracyMetrics(confusionMatrix) {
+    getEvaluationMetrics(confusionMatrix) {
         const [
             [TP, FN],
             [FP, TN]

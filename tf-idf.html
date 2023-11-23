@@ -61,6 +61,13 @@
         flex-wrap: wrap;
     }
 
+    #svm-metrics {
+        display: grid;
+        grid-template-columns: max-content 1fr;
+        grid-template-rows: min-content 1fr;
+        /* border: 2px solid black; */
+    }
+
 </style>
 <body>
     <div id="main-container">
@@ -215,15 +222,78 @@
                         <tr><th>old</th><th>new</th></tr>
                     </thead>
                     <tbody id="svm-iteration-detail">
-                        <tr><td>α<sub>r</sub></td></tr>
-                        <tr><td>α<sub>s</sub></td></tr>
-                        <tr><td><b>w</b></td></tr>
-                        <tr><td>b</td></tr>
+                        <tr>
+                            <td>α<sub>r</sub></td>
+                            <td id="svm-iter-ar-old"></td>
+                            <td id="svm-iter-ar-new"></td>
+                        </tr>
+                        <tr>
+                            <td>α<sub>s</sub></td>
+                            <td id="svm-iter-as-old"></td>
+                            <td id="svm-iter-as-new"></td>
+                        </tr>
+                        <tr>
+                            <td><b>w</b></td>
+                            <td id="svm-iter-w-old"></td>
+                            <td id="svm-iter-w-new"></td>
+                        </tr>
+                        <tr>
+                            <td>b</td>
+                            <td id="svm-iter-b-old"></td>
+                            <td id="svm-iter-b-new"></td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
-            <div id="svm-metrics">
-                
+            <div id="svm-metrics" style="flex: 1;">
+                <div id="svm-confusion-matrix">
+                    <h5>Confusion Matrix</h5>
+                    <table>
+                        <tr>
+                            <td colspan="2" rowspan="2"></td>
+                            <td colspan="2">predicted</td>
+                        </tr>
+                        <tr>
+                            <td>+</td>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <td rowspan="2">actual</td>
+                            <td>+</td>
+                            <td id="svm-conf-tp">TP</td>
+                            <td id="svm-conf-fn">FN</td>
+                        </tr>
+                        <tr>
+                            <td>-</td>
+                            <td id="svm-conf-fp">FP</td>
+                            <td id="svm-conf-tn">TN</td>
+                        </tr>
+                    </table>
+                </div>
+                <form>
+                    <h5>Evaluation Metrics</h5>
+                    <table style="width: 100%;">
+                        <tr>
+                            <td>Metrics :</td>
+                            <td>Accuracy</td>
+                            <td>Precision</td>
+                            <td>Recall</td>
+                            <td>F<sub>1</sub> Score</td>
+                            <td>Specificity</td>
+                            <td>Matthew's Correlation Coefficient (MCC)</td>
+                        </tr>
+                        <tr>
+                            <td>Value :</td>
+                            <td id="svm-metrics-accuracy"></td>
+                            <td id="svm-metrics-precision"></td>
+                            <td id="svm-metrics-recall"></td>
+                            <td id="svm-metrics-F1_score"></td>
+                            <td id="svm-metrics-specificity"></td>
+                            <td id="svm-metrics-MCC"></td>
+                        </tr>
+                    </table>
+                </form>
+                <div style="grid-column: span 2;">b</div>
             </div>
         </div>
 
@@ -510,13 +580,21 @@
             Data.scaledVectors = Data.vectors.map(vec => vec.map(ele => ele * scale))
             const svm = new SVM(Data.scaledVectors, Data.classes)
             let svmIteration = 0
+            const metricHistory = {
+                accuracy: [],
+                precision: [],
+                recall: [],
+                F1_score: [],
+                specificity: [],
+                MCC: []
+            }
 
             // INISIASI CANVAS SVM
             {
                 const svmCanvas = document.getElementById("svm-canvas")
                 canvas = new Canvas(svmCanvas, {
-                    width: 500,
-                    height: 500,
+                    width: 400,
+                    height: 400,
                     padding: 20
                 })
                 const selectX = document.getElementById("svm-x")
@@ -549,26 +627,44 @@
                     document.getElementById("svm-selected-i-s").innerText = `selected {r, s} = {${iter.r}, ${iter.s}}`
 
                     // redraw table
-                    const tbody = document.getElementById("svm-iteration-detail")
-                    tbody.innerHTML = "<tr><td>α<sub>r</sub></td></tr><tr><td>α<sub>s</sub></td></tr><tr><td><b>w</b></td></tr><tr><td>b</td></tr>"
-                    const [a_r, a_s, w, b] = tbody.children
-                    const appendCell = (parent, value) => {
-                        const td = document.createElement("td")
-                        td.innerText = `${value}`
-                        parent.appendChild(td)
-                    }
-                    appendCell(a_r, iter.a_r_old.toFixed(7))
-                    appendCell(a_r, iter.a_r_new.toFixed(7))
-                    appendCell(a_s, iter.a_s_old.toFixed(7))
-                    appendCell(a_s, iter.a_s_new.toFixed(7))
-                    appendCell(w, w_old.map(e => (e/scale).toFixed(7)).join(",\n"))
-                    appendCell(w, svm.getWeight().map(e => (e/scale).toFixed(7)).join(",\n"))
-                    appendCell(b, (b_old/scale).toFixed(7))
-                    appendCell(b, (svm.getBias()/scale).toFixed(7))
+                    const variables = ["ar-old", "ar-new", "as-old", "as-new", "w-old", "w-new", "b-old", "b-new"]
+                    const values = [
+                        iter.a_r_old.toFixed(7),
+                        iter.a_r_new.toFixed(7),
+                        iter.a_s_old.toFixed(7),
+                        iter.a_s_new.toFixed(7),
+                        w_old.map(e => (e/scale).toFixed(7)).join(",\n"),
+                        svm.getWeight().map(e => (e/scale).toFixed(7)).join(",\n"),
+                        (b_old/scale).toFixed(7),
+                        (svm.getBias()/scale).toFixed(7)
+                    ]
+                    variables.forEach((varName, index) => {
+                        document.getElementById(`svm-iter-${varName}`).innerText = values[index]
+                    })
 
                     // redraw canvas
                     redrawCanvas(selectX.value, selectY.value)
 
+                    // give accuracy info
+                    const confMatrix = svm.getConfusionMatrix(Data.scaledVectors, Data.classes)
+                    document.getElementById("svm-conf-tp").innerText = confMatrix[0][0].toString()
+                    document.getElementById("svm-conf-tn").innerText = confMatrix[1][1].toString()
+                    document.getElementById("svm-conf-fp").innerText = confMatrix[1][0].toString()
+                    document.getElementById("svm-conf-fn").innerText = confMatrix[0][1].toString()
+
+                    const evalMetrics = svm.getEvaluationMetrics(confMatrix)
+                    for (const metric in evalMetrics) {
+                        document.getElementById(`svm-metrics-${metric}`).innerText = evalMetrics[metric].toFixed(3)
+                        metricHistory[metric].push(evalMetrics[metric])
+                    }
+
+
+                    // const accMetrics = document.getElementById("svm-metrics")
+                    // accMetrics.style.whiteSpace = "pre"
+                    // accMetrics.innerText = JSON.stringify({
+                    //     confMatrix: confMatrix,
+                    //     accMetrics: svm.getAccuracyMetrics(confMatrix)
+                    // }, null, 2)
                 })
             }
 
