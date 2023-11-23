@@ -11,7 +11,7 @@
         box-sizing: border-box;
         margin: 0;
         padding: 3px;
-        border: 1px solid red;
+        /* border: 1px solid red; */
     }
     table {
       border-collapse: collapse;
@@ -68,6 +68,14 @@
         /* border: 2px solid black; */
     }
 
+    .initiallyHidden {
+        opacity: 1;
+    }
+
+    div, form {
+        border: 1px solid red;
+    }
+
 </style>
 <body>
     <div id="main-container">
@@ -115,7 +123,7 @@
             </div>
         </div>
 
-        <div id="vocabulary-container">
+        <div id="vocabulary-container" class="initiallyHidden">
             <form id="term-count-container">
                 <h3>Σ words</h3>
                 <table>
@@ -136,7 +144,7 @@
             <button id="vectorize-document"><b>Vectorize Documents</b></button>
         </div>
 
-        <div id="document-vector-container">
+        <div id="document-vector-container" class="initiallyHidden">
             <table style="flex: 2">
                 <thead id="thead-vector">
                     <tr>
@@ -173,7 +181,8 @@
             </div>
             <button style="width: 100%;" id="download-dataset-csv">Download dataset as CSV</button>
         </div>
-        <div id="idf-vectorizer-container">
+
+        <div id="idf-vectorizer-container" class="initiallyHidden">
             <table style="flex: 0;">
                 <thead><tr><th>term</th><th>IDF</th></tr></thead>
                 <tbody id="table-idf">
@@ -200,8 +209,8 @@
             <button style="width: 100%;" id="download-idf-json">Download IDF as JSON</button>
         </div>
 
-        <div id="svm-container">
-            <div id="svm-display">
+        <div id="svm-container" class="initiallyHidden">
+            <div id="svm-display" style="flex: 0;">
                 <canvas id="svm-canvas"></canvas>
                 <br>
                 <div>
@@ -270,7 +279,7 @@
                         </tr>
                     </table>
                 </div>
-                <form>
+                <form id="svm-metrics-form">
                     <h5>Evaluation Metrics</h5>
                     <table style="width: 100%;">
                         <tr>
@@ -291,10 +300,19 @@
                             <td id="svm-metrics-specificity"></td>
                             <td id="svm-metrics-MCC"></td>
                         </tr>
+                        <tr>
+                            <td>View Graph :</td>
+                            <td><input type="radio" name="svm-metrics" value="accuracy" checked></td>
+                            <td><input type="radio" name="svm-metrics" value="precision"></td>
+                            <td><input type="radio" name="svm-metrics" value="recall"></td>
+                            <td><input type="radio" name="svm-metrics" value="F1_score"></td>
+                            <td><input type="radio" name="svm-metrics" value="specificity"></td>
+                            <td><input type="radio" name="svm-metrics" value="MCC"></td>
+                        </tr>
                     </table>
                 </form>
                 <div style="grid-column: span 2;">
-                    <canvas width="1000vw"></canvas>
+                    <canvas style="width: 100%;" id="svm-chart"></canvas>
                 </div>
             </div>
         </div>
@@ -368,7 +386,7 @@
 
         // handle changes of page
         document.addEventListener('documentsHasBeenInserted', e => {
-
+            document.getElementById("vocabulary-container").style.opacity = '1'
             // reset previous input
             Documents.length = 0
             vocabulary.length = 0
@@ -428,6 +446,8 @@
     <script src="./modules/utils.js"></script>
     <script>
         document.addEventListener("documentsHasBeenVectorized", event => {
+            document.getElementById("document-vector-container").style.opacity = '1'
+            document.getElementById("idf-vectorizer-container").style.opacity = '1'
             // INISIASI TABEL
             // thead
             {
@@ -550,6 +570,7 @@
 
     <!-- svm -->
     <script src="./modules/svm.js"></script>
+    <script src="./modules/chart.js"></script>
     <script>
         /**
          * NOTE:
@@ -574,10 +595,10 @@
          * SVM masih bekerja.
         */
         const scale = 1024
-        let svm = null
-        let canvas = null
         document.addEventListener("documentsHasBeenVectorized", event => {
             
+            document.getElementById("svm-container").style.opacity = '1'
+
             // INISIASI SVM
             Data.scaledVectors = Data.vectors.map(vec => vec.map(ele => ele * scale))
             const svm = new SVM(Data.scaledVectors, Data.classes)
@@ -591,10 +612,13 @@
                 MCC: []
             }
 
-            // INISIASI CANVAS SVM
+            // ALL UPDATES WHEN SVM ITERATION OCCURS:
             {
+                // VARIABLES INITIATION
+                                
+                // 1. CANVAS
                 const svmCanvas = document.getElementById("svm-canvas")
-                canvas = new Canvas(svmCanvas, {
+                const canvas = new Canvas(svmCanvas, {
                     width: 400,
                     height: 400,
                     padding: 20
@@ -619,6 +643,22 @@
                 }
                 selectX.addEventListener("change", e => redrawCanvas(selectX.value, selectY.value))
                 selectY.addEventListener("change", e => redrawCanvas(selectX.value, selectY.value))
+
+                // 2. CHART
+                const svmChart = document.getElementById("svm-chart")
+                const chart = new Chart(svmChart)
+                let selectedMetrics = "accuracy"
+                const redrawChart = (metric) => {
+                    chart.dataPoints = metricHistory[metric]
+                    chart.drawChart("red", true)
+                }
+                document.getElementById("svm-metrics-form").addEventListener("change", event => {
+                    // redraw chart
+                    selectedMetrics = event.target.value
+                    redrawChart(selectedMetrics)
+                })
+
+                // 2. HANDLE EVAL METRICS CHANGE
                 document.getElementById("optimize-smo").addEventListener("click", event => {
                     const w_old = svm.w
                     const b_old = svm.b
@@ -660,13 +700,9 @@
                         metricHistory[metric].push(evalMetrics[metric])
                     }
 
+                    // redraw chart
+                    redrawChart(selectedMetrics)
 
-                    // const accMetrics = document.getElementById("svm-metrics")
-                    // accMetrics.style.whiteSpace = "pre"
-                    // accMetrics.innerText = JSON.stringify({
-                    //     confMatrix: confMatrix,
-                    //     accMetrics: svm.getAccuracyMetrics(confMatrix)
-                    // }, null, 2)
                 })
             }
 

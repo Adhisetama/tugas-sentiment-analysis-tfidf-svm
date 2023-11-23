@@ -3,39 +3,32 @@
  * 
  * 
  * // 1.| deklarasi class
- * const canvas = new Canvas(e); // e -> html canvas element
+ * const chart = new Chart(e); // e -> html canvas element
  * 
- * // 2.| untuk gambar titik:
+ * // 2.| titik-titik datapoint disimpan dalam this.dataPoints : number[]
+ * // modifikasi layaknya array biasa
  * p = [n1, n2, ..., nm]
+ * chart.dataPoints = p
+ * chart.dataPoints.push(n_new)
+ * chart.dataPoints.shift()
  * 
- * canvas.drawPoints(colors)
+ * // 3.| untuk  gambar chart berdasar this.dataPoints, gunakan this.drawChart(color)
+ * // ini otomatis men clear isi chart sebelumnya
+ * chart.drawChart("black")
  * 
- * 
- * // 3.| untuk  gambar garis:
- * canvas.drawLine(w, b) // garis direpresentasikan dengan weight vektor w dan bias b
- * 
- * // 4.| untuk gambar axis:
- * canvas.drawAxis()
- * 
- * // note: untuk 3. & 4.:
- *      - sebelumnya harus .drawPoints() dulu untuk tentuin skala konversi koordinat
- *      - jika garisnya diluar scope canvas, ngga akan kegambar
- * 
- * // 5.| untuk clear canvas
- * canvas.clear()
- * 
- * // note: canvas ini hanya support vektor 2d. parameter p di .drawPoints() dan w di .drawLine() harus 2 dimensi
- * 
+ * // 4.| untuk clear chart
+ * chart.clear()
+ *  * 
  */
 
-class Canvas
+class Chart
 {
 
     /**
      * 
      * @param {HTMLElement} canvasElement html element: <canvas>
      */
-    constructor(canvasElement, padding) {
+    constructor(canvasElement, padding=20) {
         this.canvas = canvasElement
         this.canvas.style.border = "1px solid black"
         this.canvas.setAttribute("width", `${this.canvas.offsetWidth}`)
@@ -47,14 +40,23 @@ class Canvas
         this.ctx = this.canvas.getContext('2d')
     }
 
-    drawPoints(color="darkgray") {
+    drawChart(color="darkgray", withPoint=false) {
+
+        if (this.dataPoints < 2) return
+
+        // what the hell
+        const drawPoint = withPoint
+        ? (x, y) => this.ctx.fillRect(x-3, y-3, 7, 7)
+        : () => {}
 
         // clear canvas
         this.clear()
 
         // get max & min X and Y
-        this.min_Y = this.dataPoints[0]
-        this.max_Y = this.dataPoints[0]
+        // this.min_Y = this.dataPoints[0]
+        // this.max_Y = this.dataPoints[0]
+        this.min_Y = 0 // note: code di atas jika ingin Y dynamic
+        this.max_Y = 1 //
 
         for (const p of this.dataPoints) {
             if (p < this.min_Y)
@@ -80,8 +82,9 @@ class Canvas
         for (let i = 1; i < Y.length; i++) {
             x_now += gap_x
             this.ctx.lineTo(x_now, Y[i])
+            drawPoint(x_now, Y[i])
         }
-        this.stroke()
+        this.ctx.stroke()
 
     }
 
