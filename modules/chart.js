@@ -46,7 +46,7 @@ class Chart
 
         // what the hell
         const drawPoint = withPoint
-        ? (x, y) => this.ctx.fillRect(x-3, y-3, 7, 7)
+        ? (x, y) => this.ctx.fillRect(x-2, y-2, 3, 3)
         : () => {}
 
         // clear canvas

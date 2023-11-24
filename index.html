@@ -69,7 +69,7 @@
     }
 
     .initiallyHidden {
-        opacity: 1;
+        opacity: 0;
     }
 
     div, form {
@@ -124,22 +124,19 @@
         </div>
 
         <div id="vocabulary-container" class="initiallyHidden">
-            <form id="term-count-container">
+            <form id="term-count-container" style="max-height: 60vw; overflow-y: scroll;">
                 <h3>Σ words</h3>
                 <table>
-                    <thead><tr><th>term</th><th>count</th><th>select as vocab</th></tr></thead>
-                    <tbody id="bag-of-words">
-                        <!-- <tr>
-                            <td>bjir</td>
-                            <td>10</td>
-                            <td><input type="checkbox"></td>
-                        </tr> -->
-                    </tbody>
+                    <thead>
+                        <tr><th rowspan="2">term</th><th rowspan="2">count</th><th colspan="2">document frequency</th><th rowspan="2">select as vocab</th></tr>
+                        <tr><th>1</th><th>-1</th></tr>
+                    </thead>
+                    <tbody id="bag-of-words"></tbody>
                 </table>
             </form>
             <div id="term-container">
                 <h3>define vocabulary:</h3>
-                <p style="font-family: monospace;" id="terms"></p>
+                <p style="font-family: monospace; max-width: 30vw; word-wrap: break-word; overflow-wrap: break-word;" id="terms"></p>
             </div>
             <button id="vectorize-document"><b>Vectorize Documents</b></button>
         </div>
@@ -218,7 +215,10 @@
                     <select name="svm-x" id="svm-x" value="0"></select>
                     <label for="svm-y">sumbu-y</label>
                     <select name="svm-y" id="svm-y" value="0"></select>
+                    <br>
                     <button name="optimize-smo" id="optimize-smo">optimize (SMO)</button>
+                    <label for="berapa-kali">num of iteration:</label>
+                    <input type="range" name="berapa-kali" id="berapa-kali" min="1" max="100" value="1">
                 </div>
                 <!-- contains: iteration n; ai, as, before after. w and b before after -->
                 <h4 id="svm-iteration-n">Iteration 0</h4>
@@ -348,7 +348,6 @@
                         if (classes === -1 || classes === 1) {
                             Data.documents.push(document)
                             Data.classes.push(classes)
-                            console.log("data parsed: ", [document, classes])
                         }
                     }
                     document.dispatchEvent(new Event('documentsHasBeenInserted'))
@@ -403,12 +402,19 @@
             terms.innerHTML = ""
 
             // hitung total kata muncul
-            Documents.forEach(d => {
+            Documents.forEach((d, index) => {
                 for (const word in d.bagOfWords) {
-                    if (bagOfWords.hasOwnProperty(word))
-                        bagOfWords[word] += d.bagOfWords[word]
-                    else
-                        bagOfWords[word] = d.bagOfWords[word]
+                    if (bagOfWords.hasOwnProperty(word)) {
+                        bagOfWords[word].count += d.bagOfWords[word]
+                        bagOfWords[word][`df_${Data.classes[index] == 1 ? "pos" : "neg"}`]++
+                    } else {
+                        bagOfWords[word] = {
+                            count: d.bagOfWords[word],
+                            df_pos: 0,
+                            df_neg: 0
+                        }
+                        bagOfWords[word][`df_${Data.classes[index] == 1 ? "pos" : "neg"}`]++
+                    }
                 }
             })
 
@@ -416,7 +422,7 @@
             // (dah gausah dibaca, aku jg pusing baca ini)
             for (const word in bagOfWords) {
                 const tr = document.createElement("tr")
-                tr.innerHTML = `<td>${word}</td><td>${bagOfWords[word]}</td><td><input type="checkbox" name="${word}"></td>`
+                tr.innerHTML = `<td>${word}</td><td>${bagOfWords[word].count}</td><td>${bagOfWords[word].df_pos}</td><td>${bagOfWords[word].df_neg}</td><td><input type="checkbox" name="${word}"></td>`
                 tbody.appendChild(tr)
             }
 
@@ -577,6 +583,7 @@
     <script src="./modules/svm.js"></script>
     <script src="./modules/chart.js"></script>
     <script>
+        let svm = null
         /**
          * NOTE:
          * karena semua angka pada train_x berupa bilangan desimal yang sangat kecil, maka operasi
@@ -606,7 +613,7 @@
 
             // INISIASI SVM
             Data.scaledVectors = Data.vectors.map(vec => vec.map(ele => ele * scale))
-            const svm = new SVM(Data.scaledVectors, Data.classes)
+            svm = new SVM(Data.scaledVectors, Data.classes)
             let svmIteration = 0
             const metricHistory = {
                 accuracy: [],
@@ -642,7 +649,6 @@
                         Data.classes.map(c => c == 1 ? "blue" : "red")
                     )
                     const w = svm.getWeight()
-                    console.log([w[axisX], w[axisY]])
                     canvas.drawLine([w[axisX], w[axisY]], svm.getBias())
                     canvas.drawAxis()
                 }
@@ -663,8 +669,8 @@
                     redrawChart(selectedMetrics)
                 })
 
-                // 2. HANDLE EVAL METRICS CHANGE
-                document.getElementById("optimize-smo").addEventListener("click", event => {
+                // 2. HANDLE ITERATION
+                function handleSMOIteration() {
                     const w_old = svm.w
                     const b_old = svm.b
                     const iter = svm.iterate()
@@ -708,6 +714,13 @@
                     // redraw chart
                     redrawChart(selectedMetrics)
 
+                }
+
+                document.getElementById("optimize-smo").addEventListener("click", event => {
+                    const n = document.getElementById("berapa-kali").value
+                    for (let i = 0; i < n; i++) {
+                        handleSMOIteration()
+                    }
                 })
             }
 
@@ -736,20 +749,20 @@
 
                 // as vector
                 const doc = new TFIDF_Document(document.getElementById("predict-model-textarea").value.trim().split(" "))
-                const tf = doc.calculateTF(Vectorizer.vocabulary).map(e => e.toFixed(7))
-                const idf = Vectorizer.idf.map(e => e.toFixed(7))
-                const x = Vectorizer.vectorizeDocument(doc).map(e => e.toFixed(7))
+                const tf = doc.calculateTF(Vectorizer.vocabulary)
+                const idf = Vectorizer.idf
+                const x = Vectorizer.vectorizeDocument(doc)
                 
-                // svm
-                const w = svm.getWeight().map(e => e / scale).map(e => e.toFixed(7))
-                const b = (svm.getBias() / scale)
+                // svm.map(e => e.toFixed(7))
+                const w = svm.getWeight().map(e => e / scale)
+                const b = svm.getBias() / scale
                 const x_dot_w = svm.Math.dot(x, w)
                 const bjir = x_dot_w + b
                 const pred = bjir > 0 ? 1 : -1
 
                 for (let i = 0; i < svm.P; i++) {
                     const tr = document.createElement("tr")
-                    let tr_innerHTML = `<td>"${Vectorizer.vocabulary[i]}"</td><td>${tf[i]}</td><td>${idf[i]}</td><td>${x[i]}</td><td>${w[i]}</td><td>${(x[i]*w[i]).toFixed(7)}</td>`
+                    let tr_innerHTML = `<td>"${Vectorizer.vocabulary[i]}"</td><td>${tf[i].toFixed(7)}</td><td>${idf[i].toFixed(7)}</td><td>${x[i].toFixed(7)}</td><td>${w[i].toFixed(7)}</td><td>${(x[i]*w[i]).toFixed(7)}</td>`
                     if (i == 0) {
                         tr_innerHTML += `<td rowspan="${svm.P}">${x_dot_w.toFixed(7)}</td><td rowspan="${svm.P}">${b.toFixed(7)}</td><td rowspan="${svm.P}">${bjir.toFixed(7)}</td><td rowspan="${svm.P}">${pred}</td>`
                     }

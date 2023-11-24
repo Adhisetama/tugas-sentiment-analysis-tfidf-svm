@@ -46,7 +46,7 @@ class SVM {
         this.E = options.E !== undefined ? options.E : 0.01  // hyperparameter epsilon (error tolerance). default=0.01
 
         // optimized value
-        this.w = Array(this.N).fill(0)
+        this.w = Array(this.P).fill(0)
         this.b = 0
     }
 
@@ -73,6 +73,7 @@ class SVM {
         const [a_r, a_s] = [this.alpha[r], this.alpha[s]]
         const [x_r, x_s] = [this.X[r], this.X[s]]
         const [y_r, y_s] = [this.Y[r], this.Y[s]]
+        // console.log(x_r,x_s,y_r,y_s)
 
         // definisikan batas range untuk a_r
         let range = null
@@ -90,6 +91,7 @@ class SVM {
                 Math.min(this.C, -y_r*(y_s*this.C - gamma))
             ]
         }
+        // console.log(gamma, range)
 
         // cari parameter a,b,c dalam persamaan kuadrat f(a_r)
         // penjelasan:
@@ -110,10 +112,14 @@ class SVM {
                     - y_s
                     )
         // ^^ semoga code nya gaada yg salah plis
+        // console.log(beta, a, b, c)
 
         // x di kondisi critical: f'(x) = ax+b = 0
         // x = -b/2a
         let a_r_new = -b / (2*a)
+
+        // jika didapat a = 0 (fungsi nya bukan fungsi kuadrat)
+        if (a == 0) a_r_new = Math.min(b*range[0]+c, b*range[1]+c)
 
         // batasi value x_r_new di range yg telah terdefinisi
         a_r_new = Math.min(Math.max(a_r_new, range[0]), range[1])
@@ -194,6 +200,9 @@ class SVM {
         for (let i=0; i<this.N; i++) {
             if (i === r || i === s) continue
             accumulator += this.alpha[i] * this.Y[i]
+            if (isNaN(accumulator)) {
+                // console.log(i, this.alpha[i], this.Y[i])
+            }
         }
         return -accumulator
     }

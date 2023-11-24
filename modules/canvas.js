@@ -75,7 +75,6 @@ class Canvas
         this.len_X = this.max_X - this.min_X
         this.len_Y = this.max_Y - this.min_Y
 
-        console.log(colors)
         points
             .map(p => this.convertToVirtualCoordinate(p))
             .forEach((p, i) => {
@@ -110,7 +109,6 @@ class Canvas
 
     drawLine(w, b) {
         const FromTo = this.convertVectorToLine(w, b)
-        console.log(FromTo)
         if (FromTo.length === 0) return
         this.ctx.beginPath()
         this.ctx.strokeStyle = "black"
