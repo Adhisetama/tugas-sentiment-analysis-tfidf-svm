@@ -369,9 +369,8 @@
             Data.documents.length = 0
             Data.classes.length = 0
             document.querySelectorAll("#add-data-table tr").forEach((row, i) => {
-                // if (i === 0) return
                 Data.documents.push(row.children[0].firstChild.value.trim())
-                Data.classes.push(row.children[1].firstChild.value)
+                Data.classes.push(Number(row.children[1].firstChild.value))
             })
             document.dispatchEvent(new Event('documentsHasBeenInserted'))
         })
